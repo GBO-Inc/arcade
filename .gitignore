@@ -1,0 +1,33 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Java / Maven / Gradle
+target/
+build/
+.gradle/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+hs_err_pid*
+
+# Node
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+.vite/
+playwright-report/
+test-results/
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local tool settings
+CLAUDE.md
+.claude/settings.local.json
