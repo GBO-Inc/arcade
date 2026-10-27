@@ -44,3 +44,6 @@ A ticket is done only when all of these hold:
 ## Commands
 
 The exact commands are added here as the setup tickets are completed (Docker Compose, CI, test tooling).
+
+- Start the whole stack: `docker compose up --build` (first copy `.env.example` to `.env`; see the README section "Run locally")
+- Stop it: `docker compose down`; reset the database: `docker compose down -v`
