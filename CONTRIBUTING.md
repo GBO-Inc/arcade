@@ -47,3 +47,7 @@ The exact commands are added here as the setup tickets are completed (Docker Com
 
 - Start the whole stack: `docker compose up --build` (first copy `.env.example` to `.env`; see the README section "Run locally")
 - Stop it: `docker compose down`; reset the database: `docker compose down -v`
+- Backend checks (in `backend/`): `./gradlew build` compiles, runs the unit tests and the Spotless format check; `./gradlew spotlessApply` fixes formatting
+- Frontend checks (in `frontend/`): `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
+
+CI (`.github/workflows/ci.yml`) runs exactly these commands on every pull request and on every push to `main`. The backend uses Gradle (Kotlin DSL) on Java 21; the frontend uses npm on Node 22.

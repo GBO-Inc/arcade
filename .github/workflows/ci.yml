@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      # Until SCRUM-18 adds the Gradle project the checks are skipped, so the job
+      # still reports and can be a required status check from day one.
+      - name: Detect Gradle project
+        id: project
+        run: |
+          if [ -f build.gradle.kts ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No backend/build.gradle.kts yet (SCRUM-18), backend checks skipped."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.project.outputs.exists == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.project.outputs.exists == 'true'
+
+      # build = compile, unit tests and check (Spotless). Called through sh because
+      # a wrapper committed from Windows can lose its executable bit.
+      - name: Build, format check and unit tests
+        if: steps.project.outputs.exists == 'true'
+        run: sh ./gradlew build
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # Until SCRUM-22 adds the TypeScript app the checks are skipped, as above.
+      - name: Detect TypeScript project
+        id: project
+        run: |
+          if [ -f tsconfig.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No frontend/tsconfig.json yet (SCRUM-22), frontend checks skipped."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.project.outputs.exists == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        if: steps.project.outputs.exists == 'true'
+        run: npm ci
+
+      - name: Lint
+        if: steps.project.outputs.exists == 'true'
+        run: npm run lint
+
+      - name: Typecheck
+        if: steps.project.outputs.exists == 'true'
+        run: npm run typecheck
+
+      - name: Unit tests
+        if: steps.project.outputs.exists == 'true'
+        run: npm test
+
+      - name: Production build
+        if: steps.project.outputs.exists == 'true'
+        run: npm run build

@@ -1,5 +1,7 @@
 # Arcade
 
+[![CI](https://github.com/GBO-Inc/arcade/actions/workflows/ci.yml/badge.svg)](https://github.com/GBO-Inc/arcade/actions/workflows/ci.yml)
+
 Real-time two-player board games in the browser: tic-tac-toe, Connect Four and checkers, with a quiz duel as an optional extra.
 
 Built by the GBO-Inc team (Game Boards Online): Zoltán, István and Ozul.
