@@ -1,6 +1,12 @@
-# Placeholder image. SCRUM-18 replaces it with a build of the Spring Boot application.
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
-COPY Placeholder.java .
+COPY gradlew gradlew.bat build.gradle.kts settings.gradle.kts ./
+COPY gradle gradle
+COPY src src
+RUN sh ./gradlew bootJar --no-daemon
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/build/libs/app.jar app.jar
 EXPOSE 8080
-CMD ["java", "Placeholder.java"]
+ENTRYPOINT ["java","-jar","app.jar"]
