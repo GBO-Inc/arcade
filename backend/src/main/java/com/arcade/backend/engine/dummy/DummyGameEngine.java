@@ -3,59 +3,57 @@ package com.arcade.backend.engine.dummy;
 import com.arcade.backend.engine.GameEngine;
 import com.arcade.backend.engine.MatchResult;
 import com.arcade.backend.engine.MoveResult;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class DummyGameEngine implements GameEngine<DummyState, DummyMove, String> {
 
-    private static final int WINNING_SCORE = 3;
+  private static final int WINNING_SCORE = 3;
 
-    @Override
-    public DummyState initialState(List<String> players) {
-        if (players == null || players.size() != 2) {
-            throw new IllegalArgumentException("Exactly 2 players are required");
-        }
-        Map<String, Integer> initialScores = Map.of(
+  @Override
+  public DummyState initialState(List<String> players) {
+    if (players == null || players.size() != 2) {
+      throw new IllegalArgumentException("Exactly 2 players are required");
+    }
+    Map<String, Integer> initialScores =
+        Map.of(
             players.get(0), 0,
-            players.get(1), 0
-        );
-        return new DummyState(initialScores, players.get(0), players.get(1));
+            players.get(1), 0);
+    return new DummyState(initialScores, players.get(0), players.get(1));
+  }
+
+  @Override
+  public List<DummyMove> legalMoves(DummyState state, String player) {
+    if (result(state) != MatchResult.ONGOING) {
+      return List.of();
+    }
+    if (!state.currentPlayer().equals(player)) {
+      return List.of();
+    }
+    return List.of(new DummyMove(player));
+  }
+
+  @Override
+  public MoveResult<DummyState> applyMove(DummyState state, DummyMove move) {
+    if (result(state) != MatchResult.ONGOING) {
+      return MoveResult.rejected("Match is already finished");
+    }
+    if (!state.currentPlayer().equals(move.playerId())) {
+      return MoveResult.rejected("Not your turn");
     }
 
-    @Override
-    public List<DummyMove> legalMoves(DummyState state, String player) {
-        if (result(state) != MatchResult.ONGOING) {
-            return List.of();
-        }
-        if (!state.currentPlayer().equals(player)) {
-            return List.of();
-        }
-        return List.of(new DummyMove(player));
-    }
+    Map<String, Integer> newScores = new HashMap<>(state.scores());
+    newScores.put(move.playerId(), newScores.get(move.playerId()) + 1);
 
-    @Override
-    public MoveResult<DummyState> applyMove(DummyState state, DummyMove move) {
-        if (result(state) != MatchResult.ONGOING) {
-            return MoveResult.rejected("Match is already finished");
-        }
-        if (!state.currentPlayer().equals(move.playerId())) {
-            return MoveResult.rejected("Not your turn");
-        }
+    DummyState newState = new DummyState(newScores, state.waitingPlayer(), state.currentPlayer());
+    return MoveResult.success(newState);
+  }
 
-        Map<String, Integer> newScores = new HashMap<>(state.scores());
-        newScores.put(move.playerId(), newScores.get(move.playerId()) + 1);
+  @Override
+  public MatchResult result(DummyState state) {
+    boolean isWon = state.scores().values().stream().anyMatch(score -> score >= WINNING_SCORE);
 
-        DummyState newState = new DummyState(newScores, state.waitingPlayer(), state.currentPlayer());
-        return MoveResult.success(newState);
-    }
-
-    @Override
-    public MatchResult result(DummyState state) {
-        boolean isWon = state.scores().values().stream()
-            .anyMatch(score -> score >= WINNING_SCORE);
-        
-        return isWon ? MatchResult.WIN : MatchResult.ONGOING;
-    }
+    return isWon ? MatchResult.WIN : MatchResult.ONGOING;
+  }
 }
