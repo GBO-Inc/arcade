@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Inter, system-ui, sans-serif">
+<title>Arcade wireframe – Login and register (desktop)</title>
+<rect x="0" y="0" width="1280" height="800" fill="#020617"/>
+<rect x="0" y="0" width="1280" height="64" fill="#0f172a"/>
+<line x1="0" y1="64" x2="1280" y2="64" stroke="#1e293b" stroke-width="1"/>
+<text x="64" y="40" font-size="20" font-weight="700" fill="#f1f5f9">Arcade</text>
+
+<text x="430" y="136" font-size="11" letter-spacing="1" fill="#64748b">AUTH CARD</text>
+<rect x="430" y="150" width="420" height="500" rx="12" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+
+<!-- Tabs: Register active -->
+<text x="535" y="196" font-size="16" fill="#94a3b8" text-anchor="middle">Sign in</text>
+<text x="745" y="196" font-size="16" font-weight="600" fill="#f1f5f9" text-anchor="middle">Register</text>
+<line x1="430" y1="217" x2="850" y2="217" stroke="#1e293b" stroke-width="1"/>
+<rect x="640" y="214" width="210" height="3" fill="#4f46e5"/>
+
+<!-- Username -->
+<text x="462" y="262" font-size="14" fill="#cbd5e1">Username</text>
+<rect x="462" y="270" width="356" height="40" rx="8" fill="#020617" stroke="#334155" stroke-width="1"/>
+<text x="478" y="295" font-size="14" fill="#64748b">ada_l</text>
+
+<!-- Email -->
+<text x="462" y="326" font-size="14" fill="#cbd5e1">Email</text>
+<rect x="462" y="334" width="356" height="40" rx="8" fill="#020617" stroke="#334155" stroke-width="1"/>
+<text x="478" y="359" font-size="14" fill="#64748b">you@example.com</text>
+
+<!-- Password -->
+<text x="462" y="390" font-size="14" fill="#cbd5e1">Password</text>
+<rect x="462" y="398" width="356" height="40" rx="8" fill="#020617" stroke="#334155" stroke-width="1"/>
+<text x="478" y="423" font-size="14" fill="#64748b">At least 8 characters</text>
+
+<!-- Display name -->
+<text x="462" y="454" font-size="14" fill="#cbd5e1">Display name</text>
+<rect x="462" y="462" width="356" height="40" rx="8" fill="#020617" stroke="#334155" stroke-width="1"/>
+<text x="478" y="487" font-size="14" fill="#64748b">Shown to other players</text>
+
+<!-- Primary button -->
+<rect x="462" y="530" width="356" height="40" rx="8" fill="#4f46e5"/>
+<text x="640" y="555" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">Create account</text>
+
+<!-- Link -->
+<text x="640" y="600" font-size="14" fill="#94a3b8" text-anchor="middle">Already have an account? <tspan fill="#cbd5e1" text-decoration="underline">Sign in</tspan></text>
+
+<!-- Note box -->
+<text x="924" y="180" font-size="11" letter-spacing="1" fill="#64748b">NOTE</text>
+<rect x="900" y="150" width="320" height="150" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+<text x="924" y="206" font-size="14" fill="#cbd5e1">Sign in tab: Username + Password,</text>
+<text x="924" y="228" font-size="14" fill="#cbd5e1">button 'Sign in'.</text>
+<text x="924" y="250" font-size="14" fill="#cbd5e1">Field errors appear in red under</text>
+<text x="924" y="272" font-size="14" fill="#cbd5e1">each field.</text>
+</svg>

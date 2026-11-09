@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Inter, system-ui, sans-serif">
+<title>Arcade wireframe – Leaderboard (desktop)</title>
+<rect x="0" y="0" width="1280" height="800" fill="#020617"/>
+<rect x="0" y="0" width="1280" height="64" fill="#0f172a"/>
+<line x1="0" y1="64" x2="1280" y2="64" stroke="#1e293b" stroke-width="1"/>
+<text x="64" y="40" font-size="20" font-weight="700" fill="#f1f5f9">Arcade</text>
+<text x="194" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Lobby</text>
+<rect x="250" y="14" width="130" height="36" rx="8" fill="#4f46e5"/>
+<text x="315" y="37" font-size="14" fill="#ffffff" text-anchor="middle">Leaderboard</text>
+<text x="436" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">History</text>
+<text x="1124" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Profile</text>
+<circle cx="1200" cy="32" r="16" fill="#334155"/>
+
+<text x="64" y="110" font-size="24" font-weight="600" fill="#f1f5f9">Leaderboard</text>
+
+<!-- Game tabs -->
+<text x="64" y="166" font-size="16" font-weight="600" fill="#f1f5f9">Tic-tac-toe</text>
+<text x="200" y="166" font-size="16" fill="#94a3b8">Connect Four</text>
+<text x="340" y="166" font-size="16" fill="#94a3b8">Checkers</text>
+<line x1="64" y1="180" x2="1216" y2="180" stroke="#1e293b" stroke-width="1"/>
+<rect x="64" y="178" width="100" height="3" fill="#4f46e5"/>
+
+<!-- Table -->
+<rect x="64" y="196" width="1152" height="444" rx="12" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+<text x="88" y="222" font-size="11" letter-spacing="1" fill="#64748b">#</text>
+<text x="184" y="222" font-size="11" letter-spacing="1" fill="#64748b">PLAYER</text>
+<text x="800" y="222" font-size="11" letter-spacing="1" fill="#64748b">RATING</text>
+<text x="920" y="222" font-size="11" letter-spacing="1" fill="#64748b">W</text>
+<text x="1020" y="222" font-size="11" letter-spacing="1" fill="#64748b">L</text>
+<text x="1120" y="222" font-size="11" letter-spacing="1" fill="#64748b">D</text>
+<line x1="64" y1="240" x2="1216" y2="240" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="288" x2="1216" y2="288" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="336" x2="1216" y2="336" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="384" x2="1216" y2="384" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="432" x2="1216" y2="432" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="480" x2="1216" y2="480" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="528" x2="1216" y2="528" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="576" x2="1216" y2="576" stroke="#1e293b" stroke-width="1"/>
+
+<!-- Current user highlight (row 7) -->
+<rect x="76" y="530" width="1128" height="44" rx="8" fill="none" stroke="#4f46e5" stroke-width="2"/>
+
+<!-- Row 1 -->
+<text x="88" y="270" font-size="16" fill="#cbd5e1">1</text>
+<circle cx="156" cy="264" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="270" font-size="16" fill="#f1f5f9">mira</text>
+<text x="800" y="270" font-size="16" fill="#cbd5e1">1412</text>
+<text x="920" y="270" font-size="16" fill="#cbd5e1">34</text>
+<text x="1020" y="270" font-size="16" fill="#cbd5e1">4</text>
+<text x="1120" y="270" font-size="16" fill="#cbd5e1">2</text>
+
+<!-- Row 2 -->
+<text x="88" y="318" font-size="16" fill="#cbd5e1">2</text>
+<circle cx="156" cy="312" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="318" font-size="16" fill="#f1f5f9">devon</text>
+<text x="800" y="318" font-size="16" fill="#cbd5e1">1388</text>
+<text x="920" y="318" font-size="16" fill="#cbd5e1">30</text>
+<text x="1020" y="318" font-size="16" fill="#cbd5e1">8</text>
+<text x="1120" y="318" font-size="16" fill="#cbd5e1">3</text>
+
+<!-- Row 3 -->
+<text x="88" y="366" font-size="16" fill="#cbd5e1">3</text>
+<circle cx="156" cy="360" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="366" font-size="16" fill="#f1f5f9">sam_k</text>
+<text x="800" y="366" font-size="16" fill="#cbd5e1">1371</text>
+<text x="920" y="366" font-size="16" fill="#cbd5e1">28</text>
+<text x="1020" y="366" font-size="16" fill="#cbd5e1">9</text>
+<text x="1120" y="366" font-size="16" fill="#cbd5e1">2</text>
+
+<!-- Row 4 -->
+<text x="88" y="414" font-size="16" fill="#cbd5e1">4</text>
+<circle cx="156" cy="408" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="414" font-size="16" fill="#f1f5f9">ola</text>
+<text x="800" y="414" font-size="16" fill="#cbd5e1">1290</text>
+<text x="920" y="414" font-size="16" fill="#cbd5e1">24</text>
+<text x="1020" y="414" font-size="16" fill="#cbd5e1">12</text>
+<text x="1120" y="414" font-size="16" fill="#cbd5e1">4</text>
+
+<!-- Row 5 -->
+<text x="88" y="462" font-size="16" fill="#cbd5e1">5</text>
+<circle cx="156" cy="456" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="462" font-size="16" fill="#f1f5f9">jun</text>
+<text x="800" y="462" font-size="16" fill="#cbd5e1">1256</text>
+<text x="920" y="462" font-size="16" fill="#cbd5e1">22</text>
+<text x="1020" y="462" font-size="16" fill="#cbd5e1">13</text>
+<text x="1120" y="462" font-size="16" fill="#cbd5e1">5</text>
+
+<!-- Row 6 -->
+<text x="88" y="510" font-size="16" fill="#cbd5e1">6</text>
+<circle cx="156" cy="504" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="510" font-size="16" fill="#f1f5f9">rin_t</text>
+<text x="800" y="510" font-size="16" fill="#cbd5e1">1240</text>
+<text x="920" y="510" font-size="16" fill="#cbd5e1">20</text>
+<text x="1020" y="510" font-size="16" fill="#cbd5e1">14</text>
+<text x="1120" y="510" font-size="16" fill="#cbd5e1">6</text>
+
+<!-- Row 7 (current user) -->
+<text x="88" y="558" font-size="16" font-weight="600" fill="#f1f5f9">7</text>
+<circle cx="156" cy="552" r="14" fill="#4f46e5"/>
+<text x="184" y="558" font-size="16" font-weight="600" fill="#f1f5f9">ada_l (you)</text>
+<text x="800" y="558" font-size="16" font-weight="600" fill="#f1f5f9">1216</text>
+<text x="920" y="558" font-size="16" fill="#cbd5e1">19</text>
+<text x="1020" y="558" font-size="16" fill="#cbd5e1">17</text>
+<text x="1120" y="558" font-size="16" fill="#cbd5e1">6</text>
+
+<!-- Row 8 -->
+<text x="88" y="606" font-size="16" fill="#cbd5e1">8</text>
+<circle cx="156" cy="600" r="14" fill="#1e293b" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="184" y="606" font-size="16" fill="#f1f5f9">pax</text>
+<text x="800" y="606" font-size="16" fill="#cbd5e1">1188</text>
+<text x="920" y="606" font-size="16" fill="#cbd5e1">15</text>
+<text x="1020" y="606" font-size="16" fill="#cbd5e1">18</text>
+<text x="1120" y="606" font-size="16" fill="#cbd5e1">7</text>
+
+<!-- Pagination -->
+<text x="560" y="674" font-size="16" fill="#cbd5e1" text-anchor="middle">‹</text>
+<rect x="584" y="652" width="32" height="32" rx="8" fill="#4f46e5"/>
+<text x="600" y="674" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">1</text>
+<text x="640" y="674" font-size="14" fill="#cbd5e1" text-anchor="middle">2</text>
+<text x="680" y="674" font-size="14" fill="#cbd5e1" text-anchor="middle">3</text>
+<text x="720" y="674" font-size="16" fill="#cbd5e1" text-anchor="middle">›</text>
+</svg>

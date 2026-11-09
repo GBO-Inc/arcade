@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Inter, system-ui, sans-serif">
+<title>Arcade wireframe – Waiting room (desktop)</title>
+<rect x="0" y="0" width="1280" height="800" fill="#020617"/>
+<rect x="0" y="0" width="1280" height="64" fill="#0f172a"/>
+<line x1="0" y1="64" x2="1280" y2="64" stroke="#1e293b" stroke-width="1"/>
+<text x="64" y="40" font-size="20" font-weight="700" fill="#f1f5f9">Arcade</text>
+<text x="194" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Lobby</text>
+<text x="315" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Leaderboard</text>
+<text x="436" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">History</text>
+<text x="1124" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Profile</text>
+<circle cx="1200" cy="32" r="16" fill="#334155"/>
+
+<!-- Title and invite -->
+<text x="64" y="120" font-size="24" font-weight="600" fill="#f1f5f9">Room ABC123 · Connect Four</text>
+<rect x="470" y="98" width="170" height="40" rx="8" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="555" y="123" font-size="14" fill="#cbd5e1" text-anchor="middle">Copy invite link</text>
+
+<!-- Player 1 slot (filled) -->
+<rect x="64" y="168" width="540" height="280" rx="12" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+<text x="88" y="196" font-size="11" letter-spacing="1" fill="#64748b">PLAYER 1 · HOST</text>
+<circle cx="334" cy="268" r="48" fill="#334155"/>
+<text x="334" y="352" font-size="20" font-weight="600" fill="#f1f5f9" text-anchor="middle">Mira K.</text>
+<text x="334" y="376" font-size="14" fill="#94a3b8" text-anchor="middle">Host</text>
+<rect x="294" y="390" width="80" height="24" rx="12" fill="#22c55e"/>
+<text x="334" y="407" font-size="14" font-weight="600" fill="#020617" text-anchor="middle">Ready</text>
+
+<!-- Player 2 slot (empty, dashed) -->
+<rect x="676" y="168" width="540" height="280" rx="12" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="700" y="196" font-size="11" letter-spacing="1" fill="#64748b">PLAYER 2</text>
+<circle cx="946" cy="268" r="48" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="946" y="352" font-size="16" fill="#94a3b8" text-anchor="middle">Waiting for opponent…</text>
+<text x="946" y="378" font-size="14" fill="#64748b" text-anchor="middle">Share the invite link to fill this slot</text>
+
+<!-- Actions -->
+<rect x="64" y="472" width="140" height="40" rx="8" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="134" y="497" font-size="14" fill="#cbd5e1" text-anchor="middle">Leave room</text>
+<g opacity="0.4">
+<rect x="1056" y="472" width="160" height="40" rx="8" fill="#4f46e5"/>
+<text x="1136" y="497" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Start match</text>
+</g>
+<text x="1216" y="530" font-size="14" fill="#94a3b8" text-anchor="end">Start match is enabled when both players are ready</text>
+
+<!-- Settings -->
+<rect x="64" y="560" width="540" height="72" rx="12" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+<text x="88" y="584" font-size="11" letter-spacing="1" fill="#64748b">ROOM SETTINGS</text>
+<text x="88" y="612" font-size="16" fill="#f1f5f9">Turn timer: 30 s</text>
+</svg>

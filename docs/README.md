@@ -10,3 +10,4 @@ This folder holds the project documents. Files are added by the tickets that pro
 | `checkers-rules.md` | SCRUM-43 | The agreed checkers rule set |
 | `retros/` | SCRUM-79 | Sprint retrospective notes |
 | `ai-usage.md` | SCRUM-25 | How AI assistance was used and checked |
+| `wireframes/` | SCRUM-26 | Screen wireframes and shared UI decisions |
