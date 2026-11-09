@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Inter, system-ui, sans-serif">
+<title>Arcade wireframe – Lobby (desktop)</title>
+<rect x="0" y="0" width="1280" height="800" fill="#020617"/>
+<rect x="0" y="0" width="1280" height="64" fill="#0f172a"/>
+<line x1="0" y1="64" x2="1280" y2="64" stroke="#1e293b" stroke-width="1"/>
+<text x="64" y="40" font-size="20" font-weight="700" fill="#f1f5f9">Arcade</text>
+<rect x="150" y="14" width="88" height="36" rx="8" fill="#4f46e5"/>
+<text x="194" y="37" font-size="14" fill="#ffffff" text-anchor="middle">Lobby</text>
+<text x="315" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Leaderboard</text>
+<text x="436" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">History</text>
+<text x="1124" y="37" font-size="14" fill="#cbd5e1" text-anchor="middle">Profile</text>
+<circle cx="1200" cy="32" r="16" fill="#334155"/>
+
+<text x="64" y="110" font-size="24" font-weight="600" fill="#f1f5f9">Lobby</text>
+
+<!-- Filter chips -->
+<rect x="64" y="140" width="56" height="32" rx="16" fill="#4f46e5"/>
+<text x="92" y="161" font-size="14" fill="#ffffff" text-anchor="middle">All</text>
+<rect x="128" y="140" width="110" height="32" rx="16" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="183" y="161" font-size="14" fill="#cbd5e1" text-anchor="middle">Tic-tac-toe</text>
+<rect x="246" y="140" width="130" height="32" rx="16" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="311" y="161" font-size="14" fill="#cbd5e1" text-anchor="middle">Connect Four</text>
+<rect x="384" y="140" width="100" height="32" rx="16" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="434" y="161" font-size="14" fill="#cbd5e1" text-anchor="middle">Checkers</text>
+
+<!-- Create room -->
+<rect x="1056" y="136" width="160" height="40" rx="8" fill="#4f46e5"/>
+<text x="1136" y="161" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">+ Create room</text>
+
+<!-- Room list -->
+<text x="64" y="190" font-size="11" letter-spacing="1" fill="#64748b">ROOM LIST</text>
+<rect x="64" y="196" width="896" height="380" rx="12" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+<text x="88" y="222" font-size="11" letter-spacing="1" fill="#64748b">GAME</text>
+<text x="296" y="222" font-size="11" letter-spacing="1" fill="#64748b">HOST</text>
+<text x="520" y="222" font-size="11" letter-spacing="1" fill="#64748b">PLAYERS</text>
+<text x="640" y="222" font-size="11" letter-spacing="1" fill="#64748b">STATUS</text>
+<line x1="64" y1="240" x2="960" y2="240" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="304" x2="960" y2="304" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="368" x2="960" y2="368" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="432" x2="960" y2="432" stroke="#1e293b" stroke-width="1"/>
+<line x1="64" y1="496" x2="960" y2="496" stroke="#1e293b" stroke-width="1"/>
+
+<!-- Row 1: Waiting, Join -->
+<text x="88" y="278" font-size="14" font-weight="600" fill="#f1f5f9">Tic-tac-toe</text>
+<text x="296" y="278" font-size="14" fill="#cbd5e1">mira</text>
+<text x="520" y="278" font-size="14" fill="#cbd5e1">1/2</text>
+<circle cx="640" cy="273" r="4" fill="#22c55e"/>
+<text x="652" y="278" font-size="14" fill="#cbd5e1">Waiting</text>
+<rect x="840" y="252" width="88" height="40" rx="8" fill="#4f46e5"/>
+<text x="884" y="277" font-size="14" fill="#ffffff" text-anchor="middle">Join</text>
+
+<!-- Row 2: In game, Full -->
+<text x="88" y="342" font-size="14" font-weight="600" fill="#f1f5f9">Connect Four</text>
+<text x="296" y="342" font-size="14" fill="#cbd5e1">devon</text>
+<text x="520" y="342" font-size="14" fill="#cbd5e1">2/2</text>
+<circle cx="640" cy="337" r="4" fill="#f59e0b"/>
+<text x="652" y="342" font-size="14" fill="#cbd5e1">In game</text>
+<g opacity="0.4">
+<rect x="840" y="316" width="88" height="40" rx="8" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="884" y="341" font-size="14" fill="#cbd5e1" text-anchor="middle">Full</text>
+</g>
+
+<!-- Row 3: Waiting, Join -->
+<text x="88" y="406" font-size="14" font-weight="600" fill="#f1f5f9">Checkers</text>
+<text x="296" y="406" font-size="14" fill="#cbd5e1">sam_k</text>
+<text x="520" y="406" font-size="14" fill="#cbd5e1">1/2</text>
+<circle cx="640" cy="401" r="4" fill="#22c55e"/>
+<text x="652" y="406" font-size="14" fill="#cbd5e1">Waiting</text>
+<rect x="840" y="380" width="88" height="40" rx="8" fill="#4f46e5"/>
+<text x="884" y="405" font-size="14" fill="#ffffff" text-anchor="middle">Join</text>
+
+<!-- Row 4: Waiting, Join -->
+<text x="88" y="470" font-size="14" font-weight="600" fill="#f1f5f9">Connect Four</text>
+<text x="296" y="470" font-size="14" fill="#cbd5e1">ola</text>
+<text x="520" y="470" font-size="14" fill="#cbd5e1">1/2</text>
+<circle cx="640" cy="465" r="4" fill="#22c55e"/>
+<text x="652" y="470" font-size="14" fill="#cbd5e1">Waiting</text>
+<rect x="840" y="444" width="88" height="40" rx="8" fill="#4f46e5"/>
+<text x="884" y="469" font-size="14" fill="#ffffff" text-anchor="middle">Join</text>
+
+<!-- Row 5: In game, Full -->
+<text x="88" y="534" font-size="14" font-weight="600" fill="#f1f5f9">Tic-tac-toe</text>
+<text x="296" y="534" font-size="14" fill="#cbd5e1">jun</text>
+<text x="520" y="534" font-size="14" fill="#cbd5e1">2/2</text>
+<circle cx="640" cy="529" r="4" fill="#f59e0b"/>
+<text x="652" y="534" font-size="14" fill="#cbd5e1">In game</text>
+<g opacity="0.4">
+<rect x="840" y="508" width="88" height="40" rx="8" fill="none" stroke="#334155" stroke-width="1"/>
+<text x="884" y="533" font-size="14" fill="#cbd5e1" text-anchor="middle">Full</text>
+</g>
+
+<!-- Join by code panel -->
+<rect x="992" y="196" width="224" height="176" rx="12" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+<text x="1016" y="230" font-size="16" font-weight="600" fill="#f1f5f9">Join by code</text>
+<text x="1016" y="252" font-size="14" fill="#94a3b8">Enter the host's code.</text>
+<rect x="1016" y="266" width="176" height="40" rx="8" fill="#020617" stroke="#334155" stroke-width="1"/>
+<text x="1032" y="291" font-size="14" fill="#64748b">Room code</text>
+<rect x="1016" y="318" width="176" height="40" rx="8" fill="#4f46e5"/>
+<text x="1104" y="343" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Join</text>
+</svg>

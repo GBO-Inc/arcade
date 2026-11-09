@@ -44,6 +44,8 @@ docker compose down -v    # stop and delete the database volume (fresh start)
 
 Run `docker compose up --build` again after changing a Dockerfile or `frontend/package.json`.
 
+If `docker compose up` stops with "required variable ... is missing a value", your `.env` is older than `.env.example`: copy the missing lines (for example `JWT_SECRET`) across.
+
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
