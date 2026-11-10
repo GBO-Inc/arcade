@@ -18,6 +18,7 @@ dist/
 coverage/
 npm-debug.log*
 .vite/
+*.tsbuildinfo
 playwright-report/
 test-results/
 
