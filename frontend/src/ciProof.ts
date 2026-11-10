@@ -1,4 +1,1 @@
-export function ciProof(): number {
-  let neverReassigned = 1;
-  return neverReassigned;
-}
+export const ciProof: number = 'not a number';
