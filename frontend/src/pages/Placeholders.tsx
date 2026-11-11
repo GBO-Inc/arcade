@@ -4,10 +4,10 @@ import { Button, TextField } from '../components/ui';
 export function LoginPage() {
   return (
     <form
-      className="mx-auto max-w-sm space-y-4"
+      className="mx-auto max-w-sm space-y-ui-4"
       onSubmit={(event) => event.preventDefault()}
     >
-      <h1 className="text-xl font-bold">Login</h1>
+      <h1 className="text-ui-xl font-bold">Login</h1>
       <TextField
         label="Email"
         name="email"
