@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { UiKitDemo } from './components/ui/UiKitDemo';
 import {
   LoginPage,
   RegisterPage,
@@ -22,6 +23,7 @@ export function AppRoutes() {
         <Route path="leaderboard" element={<LeaderboardPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="ui-kit" element={<UiKitDemo />} />
         <Route path="*" element={<div>404 Not Found</div>} />
       </Route>
     </Routes>
