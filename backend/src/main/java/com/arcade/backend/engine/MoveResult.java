@@ -1,6 +1,5 @@
 package com.arcade.backend.engine;
 
-// Az applyMove visszatérési értéke
 public record MoveResult<TState>(boolean successful, TState newState, String rejectionReason) {
   public static <T> MoveResult<T> success(T state) {
     return new MoveResult<>(true, state, null);

@@ -14,4 +14,4 @@ We need a scalable way to integrate multiple turn-based games into the arcade pl
 We implemented a strict boundary between the pure game rules and the match lifecycle:
 - The `GameEngine` interface is a pure component responsible for initial states, legal moves, applying moves, and determining match results.
 - `MatchResult` is a generic record that clearly identifies the match status (`ONGOING`, `WIN`, `DRAW`) and the winner, ensuring the server can easily update leaderboards.
-- `MatchStateMachine` acts as the orchestrator, holding the actual match lifecycle states (`WAITING`, `IN_PROGRESS`, `FINISHED`, `ABANDONED`) and rejecting moves if the match is already resolved.
+- `MatchStateMachine` acts as the orchestrator, holding the actual match lifecycle states (`WAITING`, `IN_PROGRESS`, `FINISHED`, `ABANDONED`) and rejecting invalid lifecycle transitions. Rejecting moves after the match is resolved is the engine's job (`applyMove` returns a rejection).
