@@ -37,6 +37,16 @@ describe('App routing', () => {
     ).toBeInTheDocument();
   });
 
+  it('loads the UI demo directly', () => {
+    render(
+      <MemoryRouter initialEntries={['/ui-demo']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'UI kit' })).toBeInTheDocument();
+  });
+
   it('shows 404 on unknown route', () => {
     render(
       <MemoryRouter initialEntries={['/does-not-exist']}>

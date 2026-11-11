@@ -23,7 +23,7 @@ export function AppRoutes() {
         <Route path="leaderboard" element={<LeaderboardPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="ui-kit" element={<UiKitDemo />} />
+        <Route path="ui-demo" element={<UiKitDemo />} />
         <Route path="*" element={<div>404 Not Found</div>} />
       </Route>
     </Routes>

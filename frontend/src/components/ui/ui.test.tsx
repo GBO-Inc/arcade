@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Button, Card, Dialog, Input, Toast } from './index';
+import { Button, Card, Dialog, TextField, Toast } from './index';
 
 describe('shared UI components', () => {
   it('renders buttons with variants and handles clicks', () => {
@@ -14,14 +14,24 @@ describe('shared UI components', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Join game' }));
 
     expect(onClick).toHaveBeenCalledOnce();
-    expect(screen.getByRole('button')).toHaveClass('bg-slate-800');
+    expect(screen.getByRole('button')).toHaveClass('bg-ui-surface-raised');
   });
 
-  it('associates input labels and error text accessibly', () => {
-    render(<Input label="Email" error="Enter a valid email" />);
+  it('shows a loading state and disables the button', () => {
+    render(<Button loading>Saving</Button>);
+
+    const button = screen.getByRole('button', { name: 'Saving' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button.querySelector('.animate-spin')).toBeInTheDocument();
+  });
+
+  it('associates text field labels and error text accessibly', () => {
+    render(<TextField label="Email" error="Enter a valid email" disabled />);
 
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toBeDisabled();
     expect(input).toHaveAccessibleDescription('Enter a valid email');
   });
 
@@ -37,38 +47,56 @@ describe('shared UI components', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes the dialog from its button, backdrop, and Escape key', () => {
+  it('traps focus, closes with Escape, and restores previous focus', () => {
     const onClose = vi.fn();
     const { rerender } = render(
-      <Dialog open title="Confirm match" onClose={onClose}>
-        Match details
-      </Dialog>,
+      <>
+        <button type="button">Open dialog</button>
+        <Dialog open={false} title="Confirm match" onClose={onClose}>
+          <button type="button">Last action</button>
+        </Dialog>
+      </>,
     );
+
+    const trigger = screen.getByRole('button', { name: 'Open dialog' });
+    trigger.focus();
+    rerender(
+      <>
+        <button type="button">Open dialog</button>
+        <Dialog open title="Confirm match" onClose={onClose}>
+          <button type="button">Last action</button>
+        </Dialog>
+      </>,
+    );
+
+    const closeButton = screen.getByRole('button', { name: 'Close dialog' });
+    const lastAction = screen.getByRole('button', { name: 'Last action' });
+    expect(closeButton).toHaveFocus();
+
+    fireEvent.keyDown(lastAction, { key: 'Tab' });
+    expect(closeButton).toHaveFocus();
+    fireEvent.keyDown(closeButton, { key: 'Tab', shiftKey: true });
+    expect(lastAction).toHaveFocus();
 
     expect(
       screen.getByRole('dialog', { name: 'Confirm match' }),
     ).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
-
-    onClose.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }));
-    expect(onClose).toHaveBeenCalledOnce();
-
-    onClose.mockClear();
-    fireEvent.mouseDown(screen.getByRole('dialog').parentElement!);
-    expect(onClose).toHaveBeenCalledOnce();
-
     rerender(
-      <Dialog open={false} title="Confirm match" onClose={onClose}>
-        Match details
-      </Dialog>,
+      <>
+        <button type="button">Open dialog</button>
+        <Dialog open={false} title="Confirm match" onClose={onClose}>
+          <button type="button">Last action</button>
+        </Dialog>
+      </>,
     );
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
-  it('announces toast messages and supports dismissal', () => {
+  it('announces and auto-removes toast messages', () => {
     const onDismiss = vi.fn();
+    vi.useFakeTimers();
     render(
       <Toast
         variant="error"
@@ -77,13 +105,29 @@ describe('shared UI components', () => {
       />,
     );
 
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not save changes',
+    );
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(onDismiss).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
+  it('dismisses toast messages on request', () => {
+    const onDismiss = vi.fn();
+    render(
+      <Toast message="Changes saved" onDismiss={onDismiss} duration={10000} />,
+    );
+
     fireEvent.click(
       screen.getByRole('button', { name: 'Dismiss notification' }),
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Could not save changes',
-    );
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 });
