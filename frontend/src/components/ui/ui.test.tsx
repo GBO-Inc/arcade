@@ -73,10 +73,17 @@ describe('shared UI components', () => {
     const lastAction = screen.getByRole('button', { name: 'Last action' });
     expect(closeButton).toHaveFocus();
 
+    lastAction.focus();
     fireEvent.keyDown(lastAction, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
+
+    closeButton.focus();
     fireEvent.keyDown(closeButton, { key: 'Tab', shiftKey: true });
     expect(lastAction).toHaveFocus();
+
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Tab' });
+    expect(closeButton).toHaveFocus();
 
     expect(
       screen.getByRole('dialog', { name: 'Confirm match' }),

@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-} from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 type DialogProps = {
   open: boolean;
@@ -41,7 +35,35 @@ export function Dialog({
     (focusableElements?.[0] ?? dialog)?.focus();
 
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
+      if (event.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialog) return;
+
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -52,34 +74,6 @@ export function Dialog({
   }, [open]);
 
   if (!open) return null;
-
-  const trapFocus = (event: ReactKeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Tab') return;
-
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const focusableElements = Array.from(
-      dialog.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ),
-    );
-
-    if (focusableElements.length === 0) {
-      event.preventDefault();
-      dialog.focus();
-      return;
-    }
-
-    const first = focusableElements[0];
-    const last = focusableElements[focusableElements.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
 
   return (
     <div
@@ -94,7 +88,6 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        onKeyDown={trapFocus}
         className={`w-full max-w-lg rounded-ui-xl border border-ui-border bg-ui-surface p-ui-6 text-ui-text shadow-2xl focus:outline-none ${className}`}
       >
         <div className="mb-ui-4 flex items-center justify-between gap-ui-4">
