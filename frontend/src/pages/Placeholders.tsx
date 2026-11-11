@@ -1,10 +1,29 @@
 import { useParams } from 'react-router-dom';
+import { Button, TextField } from '../components/ui';
 
 export function LoginPage() {
   return (
-    <div>
-      <h1 className="text-xl font-bold">Login</h1>
-    </div>
+    <form
+      className="mx-auto max-w-sm space-y-ui-4"
+      onSubmit={(event) => event.preventDefault()}
+    >
+      <h1 className="text-ui-xl font-bold">Login</h1>
+      <TextField
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+      />
+      <TextField
+        label="Password"
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        required
+      />
+      <Button type="submit">Sign in</Button>
+    </form>
   );
 }
 
