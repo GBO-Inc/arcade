@@ -1,32 +1,75 @@
 package com.arcade.backend.match;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class MatchStateMachineTest {
 
   @Test
-  void testValidTransitions() {
-    MatchStateMachine stateMachine = new MatchStateMachine();
-    assertEquals(MatchStatus.WAITING, stateMachine.getCurrentState());
+  void startsInWaitingAndTransitionsToInProgressThenFinished() {
+    MatchStateMachine machine = new MatchStateMachine();
+    assertThat(machine.getCurrentState()).isEqualTo(MatchStatus.WAITING);
 
-    assertDoesNotThrow(() -> stateMachine.transitionTo(MatchStatus.IN_PROGRESS));
-    assertEquals(MatchStatus.IN_PROGRESS, stateMachine.getCurrentState());
+    machine.transitionTo(MatchStatus.IN_PROGRESS);
+    assertThat(machine.getCurrentState()).isEqualTo(MatchStatus.IN_PROGRESS);
 
-    assertDoesNotThrow(() -> stateMachine.transitionTo(MatchStatus.FINISHED));
-    assertEquals(MatchStatus.FINISHED, stateMachine.getCurrentState());
+    machine.transitionTo(MatchStatus.FINISHED);
+    assertThat(machine.getCurrentState()).isEqualTo(MatchStatus.FINISHED);
   }
 
   @Test
-  void testInvalidTransitionsAreRejected() {
-    MatchStateMachine stateMachine = new MatchStateMachine();
+  void canTransitionToAbandonedFromWaiting() {
+    MatchStateMachine machine = new MatchStateMachine();
+    machine.transitionTo(MatchStatus.ABANDONED);
+    assertThat(machine.getCurrentState()).isEqualTo(MatchStatus.ABANDONED);
+  }
 
-    // WAITING-ből nem mehet rögtön FINISHED-be
-    Exception exception =
-        assertThrows(
-            IllegalStateException.class, () -> stateMachine.transitionTo(MatchStatus.FINISHED));
+  @Test
+  void canTransitionToAbandonedFromInProgress() {
+    MatchStateMachine machine = new MatchStateMachine();
+    machine.transitionTo(MatchStatus.IN_PROGRESS);
+    machine.transitionTo(MatchStatus.ABANDONED);
+    assertThat(machine.getCurrentState()).isEqualTo(MatchStatus.ABANDONED);
+  }
 
-    assertTrue(exception.getMessage().contains("Invalid state transition"));
+  @Test
+  void rejectsInvalidTransitionsFromWaitingAndInProgress() {
+    MatchStateMachine waitingMachine = new MatchStateMachine();
+    assertThatThrownBy(() -> waitingMachine.transitionTo(MatchStatus.FINISHED))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> waitingMachine.transitionTo(MatchStatus.WAITING))
+        .isInstanceOf(IllegalStateException.class);
+
+    MatchStateMachine inProgressMachine = new MatchStateMachine();
+    inProgressMachine.transitionTo(MatchStatus.IN_PROGRESS);
+    assertThatThrownBy(() -> inProgressMachine.transitionTo(MatchStatus.WAITING))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> inProgressMachine.transitionTo(MatchStatus.IN_PROGRESS))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @ParameterizedTest
+  @EnumSource(MatchStatus.class)
+  void rejectsAllTransitionsFromFinished(MatchStatus targetState) {
+    MatchStateMachine machine = new MatchStateMachine();
+    machine.transitionTo(MatchStatus.IN_PROGRESS);
+    machine.transitionTo(MatchStatus.FINISHED);
+
+    assertThatThrownBy(() -> machine.transitionTo(targetState))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @ParameterizedTest
+  @EnumSource(MatchStatus.class)
+  void rejectsAllTransitionsFromAbandoned(MatchStatus targetState) {
+    MatchStateMachine machine = new MatchStateMachine();
+    machine.transitionTo(MatchStatus.ABANDONED);
+
+    assertThatThrownBy(() -> machine.transitionTo(targetState))
+        .isInstanceOf(IllegalStateException.class);
   }
 }

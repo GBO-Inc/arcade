@@ -3,6 +3,7 @@ package com.arcade.backend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.arcade.backend.common.AbstractIntegrationTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class FlywayMigrationTest {
+class FlywayMigrationTest extends AbstractIntegrationTest {
 
   @Autowired private JdbcTemplate jdbcTemplate;
 

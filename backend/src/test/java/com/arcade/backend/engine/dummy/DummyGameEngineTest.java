@@ -1,52 +1,118 @@
 package com.arcade.backend.engine.dummy;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.arcade.backend.engine.MatchResult;
 import com.arcade.backend.engine.MoveResult;
+import com.arcade.backend.match.MatchStateMachine;
+import com.arcade.backend.match.MatchStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class DummyGameEngineTest {
 
-  private DummyGameEngine engine;
-  private final String p1 = "Player1";
-  private final String p2 = "Player2";
+  private final DummyGameEngine engine = new DummyGameEngine();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  @BeforeEach
-  void setUp() {
-    engine = new DummyGameEngine();
+  @Test
+  void dummyGameDrivesMatchStateMachineFromWaitingToFinished() {
+    MatchStateMachine stateMachine = new MatchStateMachine();
+    assertThat(stateMachine.getCurrentState()).isEqualTo(MatchStatus.WAITING);
+
+    DummyState state = engine.initialState(List.of("Alice", "Bob"));
+    stateMachine.transitionTo(MatchStatus.IN_PROGRESS);
+    assertThat(stateMachine.getCurrentState()).isEqualTo(MatchStatus.IN_PROGRESS);
+
+    List<DummyMove> moves =
+        List.of(
+            new DummyMove("Alice"),
+            new DummyMove("Bob"),
+            new DummyMove("Alice"),
+            new DummyMove("Bob"),
+            new DummyMove("Alice"));
+
+    for (DummyMove move : moves) {
+      assertThat(stateMachine.getCurrentState()).isEqualTo(MatchStatus.IN_PROGRESS);
+      MoveResult<DummyState> moveResult = engine.applyMove(state, move);
+      assertThat(moveResult.successful()).isTrue();
+      state = moveResult.newState();
+
+      if (engine.result(state).status() != MatchResult.Status.ONGOING) {
+        stateMachine.transitionTo(MatchStatus.FINISHED);
+      }
+    }
+
+    assertThat(stateMachine.getCurrentState()).isEqualTo(MatchStatus.FINISHED);
+    MatchResult<String> result = engine.result(state);
+    assertThat(result.status()).isEqualTo(MatchResult.Status.WIN);
+    assertThat(result.winner()).isEqualTo("Alice");
   }
 
   @Test
-  void testGameFlowToWin() {
-    DummyState state = engine.initialState(List.of(p1, p2));
-    assertEquals(MatchResult.ONGOING, engine.result(state));
+  void initialStateRejectsWrongNumberOfPlayers() {
+    assertThatThrownBy(() -> engine.initialState(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Exactly 2 players");
 
-    // Player 1 kapja az első 2 pontot
-    state = engine.applyMove(state, new DummyMove(p1)).newState(); // P1: 1
-    state = engine.applyMove(state, new DummyMove(p2)).newState(); // P2: 1
-    state = engine.applyMove(state, new DummyMove(p1)).newState(); // P1: 2
-    state = engine.applyMove(state, new DummyMove(p2)).newState(); // P2: 2
+    assertThatThrownBy(() -> engine.initialState(List.of("Alice")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Exactly 2 players");
 
-    assertEquals(MatchResult.ONGOING, engine.result(state));
-
-    // Player 1 eléri a 3. pontot
-    MoveResult<DummyState> finalMove = engine.applyMove(state, new DummyMove(p1));
-    assertTrue(finalMove.successful());
-
-    assertEquals(MatchResult.WIN, engine.result(finalMove.newState()));
+    assertThatThrownBy(() -> engine.initialState(List.of("Alice", "Bob", "Charlie")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Exactly 2 players");
   }
 
   @Test
-  void testInvalidMoveRejected() {
-    DummyState state = engine.initialState(List.of(p1, p2));
+  void legalMovesReturnsMoveForCurrentPlayerAndEmptyForWaitingPlayerOrFinishedMatch() {
+    DummyState state = engine.initialState(List.of("Alice", "Bob"));
 
-    // P2 próbál lépni, amikor P1 jön
-    MoveResult<DummyState> result = engine.applyMove(state, new DummyMove(p2));
+    assertThat(engine.legalMoves(state, "Alice")).containsExactly(new DummyMove("Alice"));
+    assertThat(engine.legalMoves(state, "Bob")).isEmpty();
 
-    assertFalse(result.successful());
-    assertEquals("Not your turn", result.rejectionReason());
+    state = engine.applyMove(state, new DummyMove("Alice")).newState();
+    state = engine.applyMove(state, new DummyMove("Bob")).newState();
+    state = engine.applyMove(state, new DummyMove("Alice")).newState();
+    state = engine.applyMove(state, new DummyMove("Bob")).newState();
+    state = engine.applyMove(state, new DummyMove("Alice")).newState();
+
+    assertThat(engine.legalMoves(state, "Alice")).isEmpty();
+    assertThat(engine.legalMoves(state, "Bob")).isEmpty();
+  }
+
+  @Test
+  void applyMoveRejectsWrongTurnAndMoveAfterMatchIsWon() {
+    DummyState state = engine.initialState(List.of("Alice", "Bob"));
+
+    MoveResult<DummyState> wrongTurn = engine.applyMove(state, new DummyMove("Bob"));
+    assertThat(wrongTurn.successful()).isFalse();
+    assertThat(wrongTurn.rejectionReason()).isEqualTo("Not your turn");
+
+    state = engine.applyMove(state, new DummyMove("Alice")).newState();
+    state = engine.applyMove(state, new DummyMove("Bob")).newState();
+    state = engine.applyMove(state, new DummyMove("Alice")).newState();
+    state = engine.applyMove(state, new DummyMove("Bob")).newState();
+    state = engine.applyMove(state, new DummyMove("Alice")).newState();
+
+    MoveResult<DummyState> afterWin = engine.applyMove(state, new DummyMove("Bob"));
+    assertThat(afterWin.successful()).isFalse();
+    assertThat(afterWin.rejectionReason()).isEqualTo("Match is already finished");
+  }
+
+  @Test
+  void stateAndMoveAreSerializableToJson() throws Exception {
+    DummyState originalState = engine.initialState(List.of("Alice", "Bob"));
+    DummyMove originalMove = new DummyMove("Alice");
+
+    String stateJson = objectMapper.writeValueAsString(originalState);
+    String moveJson = objectMapper.writeValueAsString(originalMove);
+
+    DummyState deserializedState = objectMapper.readValue(stateJson, DummyState.class);
+    DummyMove deserializedMove = objectMapper.readValue(moveJson, DummyMove.class);
+
+    assertThat(deserializedState).isEqualTo(originalState);
+    assertThat(deserializedMove).isEqualTo(originalMove);
   }
 }

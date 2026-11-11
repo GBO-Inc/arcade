@@ -25,7 +25,7 @@ public class DummyGameEngine implements GameEngine<DummyState, DummyMove, String
 
   @Override
   public List<DummyMove> legalMoves(DummyState state, String player) {
-    if (result(state) != MatchResult.ONGOING) {
+    if (result(state).status() != MatchResult.Status.ONGOING) {
       return List.of();
     }
     if (!state.currentPlayer().equals(player)) {
@@ -36,7 +36,7 @@ public class DummyGameEngine implements GameEngine<DummyState, DummyMove, String
 
   @Override
   public MoveResult<DummyState> applyMove(DummyState state, DummyMove move) {
-    if (result(state) != MatchResult.ONGOING) {
+    if (result(state).status() != MatchResult.Status.ONGOING) {
       return MoveResult.rejected("Match is already finished");
     }
     if (!state.currentPlayer().equals(move.playerId())) {
@@ -51,9 +51,13 @@ public class DummyGameEngine implements GameEngine<DummyState, DummyMove, String
   }
 
   @Override
-  public MatchResult result(DummyState state) {
-    boolean isWon = state.scores().values().stream().anyMatch(score -> score >= WINNING_SCORE);
+  public MatchResult<String> result(DummyState state) {
+    for (Map.Entry<String, Integer> entry : state.scores().entrySet()) {
+      if (entry.getValue() >= WINNING_SCORE) {
+        return MatchResult.win(entry.getKey());
+      }
+    }
 
-    return isWon ? MatchResult.WIN : MatchResult.ONGOING;
+    return MatchResult.ongoing();
   }
 }

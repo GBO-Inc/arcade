@@ -23,7 +23,7 @@ public class MatchStateMachine {
     return switch (current) {
       case WAITING -> next == MatchStatus.IN_PROGRESS || next == MatchStatus.ABANDONED;
       case IN_PROGRESS -> next == MatchStatus.FINISHED || next == MatchStatus.ABANDONED;
-      case FINISHED, ABANDONED -> false; // Terminális állapotok
+      case FINISHED, ABANDONED -> false;
     };
   }
 }
