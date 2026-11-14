@@ -8,8 +8,6 @@ Ticket: SCRUM-79
 
 > By the end of this sprint anyone on the team can start the whole system with one command, register and log in.
 
-Pinned in Discord #sprint-goal: TODO (date)
-
 Result: **partly met.** The stack starts with one command (SCRUM-14) and the registration and login API works (SCRUM-16). The login and registration pages (SCRUM-17) are not built yet, so a user cannot register or log in through the UI.
 
 ## Planning
@@ -34,11 +32,7 @@ Every ticket had an owner (`owner-*` label and Jira assignee).
 Done by 8 November: SCRUM-13, 14, 15, 18.
 Finished after the end date: SCRUM-16, 22, 26 (10 November), SCRUM-20, 23 (11 November).
 
-Burndown screenshot: TODO, save as `docs/retros/sprint-1-burndown.png`.
-
 ## Review
-
-Shown live to the team on: TODO (date)
 
 Demonstrated:
 - One-command start with Docker Compose (SCRUM-14)
@@ -55,13 +49,11 @@ Unfinished, carried over (moved to Sprint 2 on 14 November):
 | SCRUM-19 WebSocket endpoint with JWT | István | 5 | In Progress | Blocked by SCRUM-18 (done 8 November) and SCRUM-16 (done 10 November) |
 | SCRUM-21 Test tooling and coverage in CI | István | 3 | In Progress | Blocked by SCRUM-15 and 18, both done on the last day (8 November) |
 | SCRUM-24 API client and auth state | Ozul | 3 | In Progress | Blocked by SCRUM-16 and 22 (done 10 November) |
-| SCRUM-25 Documentation skeleton | Ozul | 3 | To Do | Not blocked (SCRUM-13 and 14 done). TODO: ask Ozul |
+| SCRUM-25 Documentation skeleton | Ozul | 3 | To Do | Not blocked (SCRUM-13 and 14 done); not started |
 | SCRUM-76 Shared contract types | István | 2 | To Do | Blocked by SCRUM-19, still in progress |
 | SCRUM-79 This retrospective | Zoltán | 1 | To Do | Done with this document |
 
 ## Retrospective
-
-Suggestions to discuss. Replace them with what the team agrees on.
 
 ### Keep
 - CI must pass on every pull request before merge.
