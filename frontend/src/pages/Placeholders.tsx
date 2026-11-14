@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button, TextField } from '../components/ui';
-import { useAuth } from '../hooks/AuthContext';
+import { useAuth } from '../hooks/auth';
 
 export function LoginPage() {
   const { login } = useAuth();

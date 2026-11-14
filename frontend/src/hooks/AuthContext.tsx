@@ -1,11 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { AuthContext, type User } from './auth';
 import {
   apiClient,
   clearAccessToken,
@@ -15,26 +9,11 @@ import {
 } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 
-export interface User {
-  id?: string | number;
-  email?: string;
-  [key: string]: unknown;
-}
-
 interface LoginResponse {
   accessToken: string;
   tokenType: string;
   expiresAt: string;
 }
-
-interface AuthContextValue {
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -97,13 +76,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 }
