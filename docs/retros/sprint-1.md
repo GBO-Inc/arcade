@@ -48,8 +48,8 @@ Unfinished, carried over (moved to Sprint 2 on 14 November):
 | SCRUM-17 Login and registration pages | Ozul | 3 | To Do | Blocked by SCRUM-16 and 22 (done 10 November) and SCRUM-23 (done 11 November) |
 | SCRUM-19 WebSocket endpoint with JWT | István | 5 | In Progress | Blocked by SCRUM-18 (done 8 November) and SCRUM-16 (done 10 November) |
 | SCRUM-21 Test tooling and coverage in CI | István | 3 | In Progress | Blocked by SCRUM-15 and 18, both done on the last day (8 November) |
-| SCRUM-24 API client and auth state | Ozul | 3 | In Progress | Blocked by SCRUM-16 and 22 (done 10 November) |
-| SCRUM-25 Documentation skeleton | Ozul | 3 | To Do | Not blocked (SCRUM-13 and 14 done); not started |
+| SCRUM-24 API client and auth state | Ozul | 3 | In Review | Blocked by SCRUM-16 and 22 (done 10 November) |
+| SCRUM-25 Documentation skeleton | Ozul | 3 | In Progress | Not blocked (SCRUM-13 and 14 done); started late |
 | SCRUM-76 Shared contract types | István | 2 | To Do | Blocked by SCRUM-19, still in progress |
 | SCRUM-79 This retrospective | Zoltán | 1 | To Do | Done with this document |
 
