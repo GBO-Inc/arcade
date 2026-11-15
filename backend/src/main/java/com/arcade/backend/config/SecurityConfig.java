@@ -14,8 +14,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-  // Stateless bearer tokens in the Authorization header, no cookies, so CSRF protection and
-  // sessions are not needed.
   @Bean
   public SecurityFilterChain securityFilterChain(
       HttpSecurity http, JsonAuthenticationEntryPoint entryPoint) throws Exception {
@@ -25,7 +23,7 @@ public class SecurityConfig {
             requests
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login")
                 .permitAll()
-                .requestMatchers("/actuator/health", "/error")
+                .requestMatchers("/actuator/health", "/error", "/ws", "/ws/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated())
