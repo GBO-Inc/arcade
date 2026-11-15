@@ -21,7 +21,10 @@ export function getAccessToken() {
 }
 
 export function setAccessToken(token: string) {
-  // localStorage keeps the token available after a page refresh.
+  // localStorage keeps the token after a page refresh. The backend reads the token from the
+  // Authorization header, not a cookie, so an httpOnly cookie is not an option without backend
+  // changes. The trade-off is that script injected through XSS could read the token, so never
+  // render untrusted HTML.
   localStorage.setItem(ACCESS_TOKEN_KEY, token);
 }
 
@@ -56,10 +59,13 @@ function getErrorMessage(body: unknown, statusText: string) {
     return body;
   }
 
-  if (body && typeof body === 'object' && 'message' in body) {
-    const message = body.message;
-    if (typeof message === 'string' && message) {
-      return message;
+  // The backend answers errors with a ProblemDetail, which puts the text in `detail`.
+  if (body && typeof body === 'object') {
+    for (const key of ['detail', 'message'] as const) {
+      const value = (body as Record<string, unknown>)[key];
+      if (typeof value === 'string' && value) {
+        return value;
+      }
     }
   }
 
@@ -97,11 +103,8 @@ async function request<T>(
   const url = `${baseUrl}/${path.replace(/^\//, '')}`;
   const response = await fetch(url, { ...requestOptions, headers, body });
 
-  if (!response) {
-    throw new ApiError(0, 'No response received');
-  }
-
-  if (response.status === 401) {
+  // Without a token a 401 means bad credentials (login), not an expired session.
+  if (response.status === 401 && token) {
     unauthorizedHandlers.forEach((handler) => handler());
   }
 

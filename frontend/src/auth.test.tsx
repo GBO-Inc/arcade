@@ -73,8 +73,8 @@ describe('authentication', () => {
     renderAt('/match/room-42');
 
     expect(await screen.findByRole('heading', { name: 'Login' })).toBeVisible();
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'player@example.com' },
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: 'player1' },
     });
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'secret' },
@@ -91,7 +91,7 @@ describe('authentication', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
-          email: 'player@example.com',
+          username: 'player1',
           password: 'secret',
         }),
       }),
@@ -138,5 +138,114 @@ describe('authentication', () => {
     await waitFor(() =>
       expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull(),
     );
+  });
+
+  it('shows the server message after a wrong password and still returns to the requested page', async () => {
+    let loginAttempts = 0;
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).endsWith('/api/auth/login')) {
+        loginAttempts += 1;
+        return Promise.resolve(
+          loginAttempts === 1
+            ? jsonResponse({ detail: 'Invalid username or password' }, 401)
+            : jsonResponse({ accessToken: 'new-token' }),
+        );
+      }
+
+      return Promise.resolve(jsonResponse({ id: 7, username: 'player1' }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderAt('/history');
+    expect(await screen.findByRole('heading', { name: 'Login' })).toBeVisible();
+
+    function submitLogin(password: string) {
+      fireEvent.change(screen.getByLabelText('Username'), {
+        target: { value: 'player1' },
+      });
+      fireEvent.change(screen.getByLabelText('Password'), {
+        target: { value: password },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    }
+
+    submitLogin('wrong');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Invalid username or password',
+    );
+
+    submitLogin('secret');
+    expect(
+      await screen.findByRole('heading', { name: 'History' }),
+    ).toBeVisible();
+  });
+
+  it('returns to the requested page after an expired token is replaced by a new login', async () => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, 'expired-token');
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/auth/login')) {
+        return Promise.resolve(jsonResponse({ accessToken: 'new-token' }));
+      }
+      if (localStorage.getItem(ACCESS_TOKEN_KEY) === 'expired-token') {
+        return Promise.resolve(jsonResponse({}, 401));
+      }
+      return Promise.resolve(jsonResponse({ id: 7, username: 'player1' }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderAt('/leaderboard');
+    expect(await screen.findByRole('heading', { name: 'Login' })).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: 'player1' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Leaderboard' }),
+    ).toBeVisible();
+  });
+
+  it('logs out when the session cannot be checked on app start', async () => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, 'valid-token');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 500)));
+
+    renderAt('/lobby');
+
+    expect(await screen.findByRole('heading', { name: 'Login' })).toBeVisible();
+    expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
+  });
+
+  it('checks the session once, not on every page change', async () => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, 'valid-token');
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(jsonResponse({ id: 7, username: 'player1' })),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MemoryRouter initialEntries={['/lobby']}>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeVisible();
+    fireEvent.click(screen.getByRole('link', { name: 'Leaderboard' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Leaderboard' }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole('link', { name: 'History' }));
+    expect(
+      await screen.findByRole('heading', { name: 'History' }),
+    ).toBeVisible();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

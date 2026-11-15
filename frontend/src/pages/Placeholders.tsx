@@ -21,7 +21,7 @@ export function LoginPage() {
     const formData = new FormData(event.currentTarget);
     try {
       await login(
-        String(formData.get('email')),
+        String(formData.get('username')),
         String(formData.get('password')),
       );
       navigate(
@@ -41,10 +41,9 @@ export function LoginPage() {
     <form className="mx-auto max-w-sm space-y-ui-4" onSubmit={handleSubmit}>
       <h1 className="text-ui-xl font-bold">Login</h1>
       <TextField
-        label="Email"
-        name="email"
-        type="email"
-        autoComplete="email"
+        label="Username"
+        name="username"
+        autoComplete="username"
         required
       />
       <TextField
