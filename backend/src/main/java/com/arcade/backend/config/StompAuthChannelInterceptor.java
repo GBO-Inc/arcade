@@ -18,6 +18,9 @@ import org.springframework.stereotype.Component;
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
   private static final String BEARER_PREFIX = "Bearer ";
+  private static final String APP_PREFIX = "/app/";
+  private static final String TOPIC_PREFIX = "/topic/";
+  private static final String USER_QUEUE_PREFIX = "/user/queue/";
   private final JwtDecoder jwtDecoder;
 
   public StompAuthChannelInterceptor(JwtDecoder jwtDecoder) {
@@ -35,7 +38,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     switch (accessor.getCommand()) {
       case CONNECT -> authenticateConnect(accessor);
       case SUBSCRIBE -> validateSubscription(accessor);
-      case SEND -> requireAuthenticated(accessor);
+      case SEND -> validateSend(accessor);
       default -> {}
     }
 
@@ -62,18 +65,25 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     }
   }
 
-  private void validateSubscription(StompHeaderAccessor accessor) {
-    Principal user = requireAuthenticated(accessor);
+  // Only /app/** reaches the server's handlers; anything else would go straight to the broker
+  // and be delivered to subscribers without the server seeing it.
+  private void validateSend(StompHeaderAccessor accessor) {
+    requireAuthenticated(accessor);
     String destination = accessor.getDestination();
-    if (destination == null) {
-      throw new AccessDeniedException("Subscription destination is required");
+    if (destination == null || !destination.startsWith(APP_PREFIX)) {
+      throw new AccessDeniedException("Messages can only be sent to /app/**");
     }
+  }
 
-    if (destination.startsWith("/user/") && !destination.startsWith("/user/queue/")) {
-      String expectedPrefix = "/user/" + user.getName() + "/queue/";
-      if (!destination.startsWith(expectedPrefix)) {
-        throw new AccessDeniedException("Cannot subscribe to another user's private queue");
-      }
+  // /user/queue/** is resolved to the subscriber's own session, so it cannot reach another user's
+  // queue. Raw /queue/** and /user/{name}/** destinations are refused.
+  private void validateSubscription(StompHeaderAccessor accessor) {
+    requireAuthenticated(accessor);
+    String destination = accessor.getDestination();
+    if (destination == null
+        || !(destination.startsWith(TOPIC_PREFIX) || destination.startsWith(USER_QUEUE_PREFIX))) {
+      throw new AccessDeniedException(
+          "Subscriptions are only allowed to /topic/** and /user/queue/**");
     }
   }
 
