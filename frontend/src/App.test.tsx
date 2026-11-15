@@ -1,22 +1,51 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import App, { AppRoutes } from './App';
+import { ACCESS_TOKEN_KEY } from './api/client';
+import { AuthProvider } from './hooks/AuthContext';
+
+function renderRoutes(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
 
 describe('App routing', () => {
-  it('navigates between pages without reload', () => {
+  beforeEach(() => {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ id: 1 }), {
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      ),
+    );
+  });
+
+  it('navigates between pages without reload', async () => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, 'test-token');
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Lobby' }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Leaderboard' }));
     expect(
-      screen.getByRole('heading', { name: 'Leaderboard' }),
+      await screen.findByRole('heading', { name: 'Leaderboard' }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'History' }));
     expect(
-      screen.getByRole('heading', { name: 'History' }),
+      await screen.findByRole('heading', { name: 'History' }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Register' }));
@@ -25,34 +54,23 @@ describe('App routing', () => {
     ).toBeInTheDocument();
   });
 
-  it('loads a URL directly', () => {
-    render(
-      <MemoryRouter initialEntries={['/match/room-42']}>
-        <AppRoutes />
-      </MemoryRouter>,
-    );
+  it('loads a URL directly', async () => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, 'test-token');
+    renderRoutes('/match/room-42');
 
     expect(
-      screen.getByRole('heading', { name: 'Match room-42' }),
+      await screen.findByRole('heading', { name: 'Match room-42' }),
     ).toBeInTheDocument();
   });
 
   it('loads the UI demo directly', () => {
-    render(
-      <MemoryRouter initialEntries={['/ui-demo']}>
-        <AppRoutes />
-      </MemoryRouter>,
-    );
+    renderRoutes('/ui-demo');
 
     expect(screen.getByRole('heading', { name: 'UI kit' })).toBeInTheDocument();
   });
 
   it('shows 404 on unknown route', () => {
-    render(
-      <MemoryRouter initialEntries={['/does-not-exist']}>
-        <AppRoutes />
-      </MemoryRouter>,
-    );
+    renderRoutes('/does-not-exist');
 
     expect(screen.getByText(/404/i)).toBeInTheDocument();
   });
