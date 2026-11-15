@@ -25,7 +25,7 @@ public class SecurityConfig {
             requests
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login")
                 .permitAll()
-                .requestMatchers("/actuator/health", "/error")
+                .requestMatchers("/actuator/health", "/error", "/ws", "/ws/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated())
