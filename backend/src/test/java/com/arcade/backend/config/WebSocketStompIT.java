@@ -3,6 +3,7 @@ package com.arcade.backend.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.arcade.backend.AbstractIntegrationTest;
 import com.arcade.backend.config.WebSocketEchoController.EchoMessage;
 import com.arcade.backend.config.WebSocketEchoController.EchoResponse;
 import java.lang.reflect.Type;
@@ -28,14 +29,12 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-class WebSocketStompIntegrationTest {
+class WebSocketStompIT extends AbstractIntegrationTest {
 
   private static final String ALLOWED_ORIGIN = "http://localhost:5173";
 
