@@ -24,9 +24,6 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v7
-
-      # Until SCRUM-18 adds the Gradle project the checks are skipped, so the job
-      # still reports and can be a required status check from day one.
       - name: Detect Gradle project
         id: project
         run: |
@@ -46,11 +43,37 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         if: steps.project.outputs.exists == 'true'
 
-      # build = compile, unit tests and check (Spotless). Called through sh because
-      # a wrapper committed from Windows can lose its executable bit.
-      - name: Build, format check and unit tests
+      # build = compile, unit tests, integration tests, check (Spotless) and the
+      # JaCoCo report. Called through sh because a wrapper committed from Windows
+      # can lose its executable bit.
+      - name: Build, format check, tests and coverage
         if: steps.project.outputs.exists == 'true'
         run: sh ./gradlew build
+
+      # JaCoCo CSV columns 4-9: instruction, branch and line counts (missed, covered).
+      - name: Publish JaCoCo coverage summary
+        if: steps.project.outputs.exists == 'true' && always()
+        run: |
+          CSV_FILE="build/reports/jacoco/test/jacocoTestReport.csv"
+          if [ -f "$CSV_FILE" ]; then
+            awk -F',' '
+              function row(name, missed, covered,   total) {
+                total = missed + covered
+                printf "| %s | %d | %d | **%.2f%%** |\n", name, covered, total, (total > 0 ? covered / total * 100 : 0)
+              }
+              NR > 1 { im += $4; ic += $5; bm += $6; bc += $7; lm += $8; lc += $9 }
+              END {
+                print "### Backend Test Coverage (JaCoCo)\n"
+                print "| Metric | Covered | Total | Coverage |"
+                print "| :--- | :---: | :---: | :---: |"
+                row("Instructions", im, ic)
+                row("Branches", bm, bc)
+                row("Lines", lm, lc)
+              }
+            ' "$CSV_FILE" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "JaCoCo CSV report not found at $CSV_FILE" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   frontend:
     name: Frontend
@@ -62,7 +85,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Until SCRUM-22 adds the TypeScript app the checks are skipped, as above.
       - name: Detect TypeScript project
         id: project
         run: |
@@ -92,9 +114,9 @@ jobs:
         if: steps.project.outputs.exists == 'true'
         run: npm run typecheck
 
-      - name: Unit tests
+      - name: Unit tests with coverage
         if: steps.project.outputs.exists == 'true'
-        run: npm test
+        run: npm run test:coverage
 
       - name: Production build
         if: steps.project.outputs.exists == 'true'

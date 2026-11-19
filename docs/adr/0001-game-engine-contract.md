@@ -1,7 +1,7 @@
 # ADR 1: Game Engine Contract & Match State Machine
 
 ## Status
-Proposed (Requires approval from all 3 team members in the PR)
+Accepted (approved by all 3 team members in PR #8, 11 Nov 2026)
 
 ## Context
 We need a scalable way to integrate multiple turn-based games into the arcade platform. The platform must handle matchmaking, match lifecycle (ongoing, finished, abandoned), and move validation without hardcoding specific game rules into the core infrastructure.

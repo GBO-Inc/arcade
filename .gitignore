@@ -5,6 +5,7 @@
 
 # Java / Maven / Gradle
 target/
+bin/
 build/
 .gradle/
 *.class
