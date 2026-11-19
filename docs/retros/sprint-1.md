@@ -43,7 +43,7 @@ Demonstrated:
 
 Unfinished, carried over (moved to Sprint 2 on 14 November):
 
-| Ticket | Owner | Points | Status | Reason |
+| Ticket | Owner | Points | Status on 14 November | Reason |
 |---|---|---|---|---|
 | SCRUM-17 Login and registration pages | Ozul | 3 | To Do | Blocked by SCRUM-16 and 22 (done 10 November) and SCRUM-23 (done 11 November) |
 | SCRUM-19 WebSocket endpoint with JWT | István | 5 | In Progress | Blocked by SCRUM-18 (done 8 November) and SCRUM-16 (done 10 November) |
