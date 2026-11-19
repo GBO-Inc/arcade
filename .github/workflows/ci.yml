@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
 
+# A new push to a pull request cancels its older run. On main every commit gets
+# its own group, so no merge's run is ever cancelled or replaced.
 concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: true
@@ -41,36 +43,34 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         if: steps.project.outputs.exists == 'true'
 
+      # build = compile, unit tests, integration tests, check (Spotless) and the
+      # JaCoCo report. Called through sh because a wrapper committed from Windows
+      # can lose its executable bit.
       - name: Build, format check, tests and coverage
         if: steps.project.outputs.exists == 'true'
         run: sh ./gradlew build
 
+      # JaCoCo CSV columns 4-9: instruction, branch and line counts (missed, covered).
       - name: Publish JaCoCo coverage summary
         if: steps.project.outputs.exists == 'true' && always()
         run: |
           CSV_FILE="build/reports/jacoco/test/jacocoTestReport.csv"
           if [ -f "$CSV_FILE" ]; then
             awk -F',' '
-              NR > 1 {
-                inst_missed += $4; inst_covered += $5;
-                branch_missed += $6; branch_covered += $7;
-                line_missed += $8; line_covered += $9;
+              function row(name, missed, covered,   total) {
+                total = missed + covered
+                printf "| %s | %d | %d | **%.2f%%** |\n", name, covered, total, (total > 0 ? covered / total * 100 : 0)
               }
+              NR > 1 { im += $4; ic += $5; bm += $6; bc += $7; lm += $8; lc += $9 }
               END {
-                inst_total = inst_missed + inst_covered;
-                branch_total = branch_missed + branch_covered;
-                line_total = line_missed + line_covered;
-                inst_pct = inst_total > 0 ? (inst_covered / inst_total) * 100 : 0;
-                branch_pct = branch_total > 0 ? (branch_covered / branch_total) * 100 : 0;
-                line_pct = line_total > 0 ? (line_covered / line_total) * 100 : 0;
-                printf "### Backend Test Coverage (JaCoCo)\n\n" >> "'"$GITHUB_STEP_SUMMARY"'"
-                printf "| Metric | Covered | Total | Coverage |\n" >> "'"$GITHUB_STEP_SUMMARY"'"
-                printf "| :--- | :---: | :---: | :---: |\n" >> "'"$GITHUB_STEP_SUMMARY"'"
-                printf "| Instructions | %d | %d | **%.2f%%** |\n", inst_covered, inst_total, inst_pct >> "'"$GITHUB_STEP_SUMMARY"'"
-                printf "| Branches | %d | %d | **%.2f%%** |\n", branch_covered, branch_total, branch_pct >> "'"$GITHUB_STEP_SUMMARY"'"
-                printf "| Lines | %d | %d | **%.2f%%** |\n", line_covered, line_total, line_pct >> "'"$GITHUB_STEP_SUMMARY"'"
+                print "### Backend Test Coverage (JaCoCo)\n"
+                print "| Metric | Covered | Total | Coverage |"
+                print "| :--- | :---: | :---: | :---: |"
+                row("Instructions", im, ic)
+                row("Branches", bm, bc)
+                row("Lines", lm, lc)
               }
-            ' "$CSV_FILE"
+            ' "$CSV_FILE" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "JaCoCo CSV report not found at $CSV_FILE" >> "$GITHUB_STEP_SUMMARY"
           fi

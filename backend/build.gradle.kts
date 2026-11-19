@@ -34,8 +34,6 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 }
 
@@ -57,7 +55,7 @@ tasks.test {
     }
 }
 
-// 2. Integrációs tesztek: csak az *IT végződésű osztályok futnak
+// Integration tests (*IT) need Docker, so they run in their own task after the unit tests.
 val integrationTest = tasks.register<Test>("integrationTest") {
     description = "Runs integration tests (*IT) using Testcontainers."
     group = "verification"
@@ -76,7 +74,7 @@ tasks.check {
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test, integrationTest)
-    executionData.setFrom(fileTree(layout.buildDirectory).include("/jacoco/*.exec"))
+    executionData(tasks.test.get(), integrationTest.get())
     reports {
         xml.required.set(true)
         html.required.set(true)
