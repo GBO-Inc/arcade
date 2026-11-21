@@ -121,7 +121,7 @@ describe('authentication', () => {
     }
 
     render(
-      <MemoryRouter initialEntries={['/profile']}>
+      <MemoryRouter initialEntries={['/history']}>
         <AuthProvider>
           <AppRoutes />
           <TriggerUnauthorizedRequest />
@@ -130,7 +130,7 @@ describe('authentication', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Profile' }),
+      await screen.findByRole('heading', { name: 'History' }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Load private data' }));
 
