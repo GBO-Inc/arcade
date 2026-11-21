@@ -15,6 +15,19 @@ The plan lives in Jira (project SCRUM). Every change starts from a ticket. The t
 
 Imperative, one line, ticket key first: `SCRUM-33 Add tic-tac-toe engine`.
 
+## Testing rules & templates
+
+- **Every ticket ships with tests.** No feature or refactor is complete without unit and/or integration tests covering its acceptance criteria.
+- **Bug fixes start with a failing test.** Before fixing a bug, write an automated test that reproduces it and fails, then implement the fix until the test passes.
+- **Naming conventions:**
+  - Backend unit tests end with `*Test.java` (using JUnit 5, Mockito, and AssertJ) and run without Docker.
+  - Backend integration tests end with `*IT.java`, extend [`AbstractIntegrationTest`](backend/src/test/java/com/arcade/backend/AbstractIntegrationTest.java) so a single PostgreSQL Testcontainer is shared across the entire test run, and verify database/HTTP/WebSocket behavior.
+  - Frontend tests end with `*.test.ts` or `*.test.tsx` (using Vitest and React Testing Library).
+- **Test templates (use these as starting points):**
+  - Backend unit test template: [`AuthServiceTest.java`](backend/src/test/java/com/arcade/backend/auth/AuthServiceTest.java) (and [`MatchStateMachineTest.java`](backend/src/test/java/com/arcade/backend/match/MatchStateMachineTest.java))
+  - Backend integration test template: [`FlywayMigrationIT.java`](backend/src/test/java/com/arcade/backend/FlywayMigrationIT.java)
+  - Frontend component test template: [`ui.test.tsx`](frontend/src/components/ui/ui.test.tsx)
+
 ## Architecture rules
 
 - The server is the only authority on game state. Clients send moves, the server validates and broadcasts the result.
@@ -34,9 +47,9 @@ Imperative, one line, ticket key first: `SCRUM-33 Add tic-tac-toe engine`.
 A ticket is done only when all of these hold:
 
 - Acceptance criteria are met and ticked off
-- Tests are written and passing
+- Tests are written and passing (including a regression test for bug fixes)
 - One teammate has approved the pull request
-- CI is green: build, lint, typecheck and tests
+- CI is green: build, lint, typecheck, tests and coverage reports
 - Documentation is updated where behaviour changed
 - The pull request links the ticket
 - The author can explain every part of the change in review
@@ -47,7 +60,11 @@ The exact commands are added here as the setup tickets are completed (Docker Com
 
 - Start the whole stack: `docker compose up --build` (first copy `.env.example` to `.env`; see the README section "Run locally")
 - Stop it: `docker compose down`; reset the database: `docker compose down -v`
-- Backend checks (in `backend/`): `./gradlew build` compiles, runs the unit tests and the Spotless format check; `./gradlew spotlessApply` fixes formatting
-- Frontend checks (in `frontend/`): `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
+- Backend checks (in `backend/`):
+  - `./gradlew test` runs unit tests (`*Test`)
+  - `./gradlew integrationTest` runs Testcontainers integration tests (`*IT`)
+  - `./gradlew build` compiles, runs all tests, generates the JaCoCo coverage report, and runs the Spotless format check
+  - `./gradlew spotlessApply` fixes formatting
+- Frontend checks (in `frontend/`): `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:coverage`, `npm run build`
 
-CI (`.github/workflows/ci.yml`) runs exactly these commands on every pull request and on every push to `main`. The backend uses Gradle (Kotlin DSL) on Java 21; the frontend uses npm on Node 22.
+CI (`.github/workflows/ci.yml`) runs these checks on every pull request and on every push to `main`. The backend uses Gradle (Kotlin DSL) on Java 21; the frontend uses npm on Node 22.
