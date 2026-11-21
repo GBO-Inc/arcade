@@ -10,8 +10,8 @@ import {
   MatchPage,
   LeaderboardPage,
   HistoryPage,
-  ProfilePage,
 } from './pages/Placeholders';
+import { ProfilePage } from './pages/ProfilePage';
 
 export function AppRoutes() {
   return (
@@ -54,6 +54,14 @@ export function AppRoutes() {
         />
         <Route
           path="profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="profile/:userId"
           element={
             <ProtectedRoute>
               <ProfilePage />

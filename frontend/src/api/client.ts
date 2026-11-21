@@ -4,15 +4,27 @@ export const ACCESS_TOKEN_KEY = 'arcade_access_token';
 const unauthorizedHandlers = new Set<() => void>();
 type ApiRequestInit = Omit<RequestInit, 'body'> & { body?: unknown };
 
+export interface FieldError {
+  field: string;
+  message: string;
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly message: string;
+  readonly fieldErrors: FieldError[];
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, fieldErrors: FieldError[] = []) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.message = message;
+    this.fieldErrors = fieldErrors;
+  }
+
+  /** The first server message for a request field, for showing it next to that field. */
+  fieldError(field: string) {
+    return this.fieldErrors.find((error) => error.field === field)?.message;
   }
 }
 
@@ -72,6 +84,21 @@ function getErrorMessage(body: unknown, statusText: string) {
   return statusText || 'Request failed';
 }
 
+// A 400 from bean validation lists the rejected fields in `fieldErrors`.
+function getFieldErrors(body: unknown): FieldError[] {
+  if (!body || typeof body !== 'object') {
+    return [];
+  }
+  const fieldErrors = (body as Record<string, unknown>).fieldErrors;
+  if (!Array.isArray(fieldErrors)) {
+    return [];
+  }
+  return fieldErrors.filter(
+    (error): error is FieldError =>
+      typeof error?.field === 'string' && typeof error?.message === 'string',
+  );
+}
+
 async function request<T>(
   path: string,
   options: ApiRequestInit = {},
@@ -113,6 +140,7 @@ async function request<T>(
     throw new ApiError(
       response.status,
       getErrorMessage(responseBody, response.statusText),
+      getFieldErrors(responseBody),
     );
   }
 
@@ -126,5 +154,8 @@ export const apiClient = {
   },
   post<T>(path: string, body?: unknown) {
     return request<T>(path, { method: 'POST', body });
+  },
+  put<T>(path: string, body?: unknown) {
+    return request<T>(path, { method: 'PUT', body });
   },
 };
