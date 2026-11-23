@@ -2,6 +2,7 @@ package com.arcade.backend.lobby;
 
 import com.arcade.backend.auth.AccountNotFoundException;
 import com.arcade.backend.auth.UserRepository;
+import com.arcade.backend.match.MatchService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -21,6 +22,7 @@ public class RoomService {
   private final RoomMemberRepository members;
   private final UserRepository users;
   private final RoomCodeGenerator codeGenerator;
+  private final MatchService matchService;
   private final Clock clock;
   private final TransactionTemplate transaction;
 
@@ -29,12 +31,14 @@ public class RoomService {
       RoomMemberRepository members,
       UserRepository users,
       RoomCodeGenerator codeGenerator,
+      MatchService matchService,
       Clock clock,
       PlatformTransactionManager transactionManager) {
     this.rooms = rooms;
     this.members = members;
     this.users = users;
     this.codeGenerator = codeGenerator;
+    this.matchService = matchService;
     this.clock = clock;
     this.transaction = new TransactionTemplate(transactionManager);
   }
@@ -87,6 +91,11 @@ public class RoomService {
     }
     if (members.countByRoomId(room.getId()) >= room.getCapacity()) {
       room.setStatus(RoomStatus.FULL);
+      List<String> playerIds =
+          members.findAllByRoomIdOrderByJoinedAtAscIdAsc(room.getId()).stream()
+              .map(m -> String.valueOf(m.getUserId()))
+              .toList();
+      matchService.createFromFullRoom(room.getId(), room.getGameType(), playerIds);
     }
     return summary(room.getId());
   }
@@ -102,6 +111,9 @@ public class RoomService {
         members.findByRoomIdAndUserId(roomId, userId).orElseThrow(RoomException::notInRoom);
     if (room.getStatus() == RoomStatus.STARTED) {
       throw RoomException.started();
+    }
+    if (room.getStatus() == RoomStatus.FULL) {
+      matchService.abandonWaitingMatch(roomId);
     }
     members.delete(member);
     if (members.countByRoomId(roomId) == 0) {
