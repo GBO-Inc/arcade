@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Match<TState, TMove> {
 
@@ -17,9 +19,12 @@ public class Match<TState, TMove> {
   private final MatchStateMachine stateMachine;
   private final Set<String> connectedPlayers = new HashSet<>();
   private final List<TMove> moves = new ArrayList<>();
+  private final ReentrantLock lock = new ReentrantLock();
 
   private TState state;
   private String currentTurnPlayerId;
+  private boolean resultPublished = false;
+  private ScheduledFuture<?> disconnectTimeoutTask;
 
   public Match(
       UUID id, long roomId, GameType gameType, List<String> orderedPlayers, TState initialState) {
@@ -33,6 +38,10 @@ public class Match<TState, TMove> {
     this.stateMachine = new MatchStateMachine();
     this.state = initialState;
     this.currentTurnPlayerId = orderedPlayers.get(0);
+  }
+
+  public ReentrantLock getLock() {
+    return lock;
   }
 
   public UUID getId() {
@@ -71,19 +80,49 @@ public class Match<TState, TMove> {
     return Collections.unmodifiableSet(connectedPlayers);
   }
 
+  public boolean isTerminal() {
+    MatchStatus status = stateMachine.getCurrentState();
+    return status == MatchStatus.FINISHED || status == MatchStatus.ABANDONED;
+  }
+
   public void markPlayerConnected(String playerId) {
     if (!players.contains(playerId)) {
       throw new IllegalArgumentException("Player is not part of this match: " + playerId);
     }
+    if (isTerminal()) {
+      return;
+    }
     connectedPlayers.add(playerId);
+    cancelDisconnectTimeout();
     if (stateMachine.getCurrentState() == MatchStatus.WAITING
         && connectedPlayers.containsAll(players)) {
       stateMachine.transitionTo(MatchStatus.IN_PROGRESS);
     }
   }
 
-  public void abandon() {
-    stateMachine.transitionTo(MatchStatus.ABANDONED);
+  /** Returns true if the match is active (not terminal) and now has zero connected players. */
+  public boolean markPlayerDisconnected(String playerId) {
+    if (!players.contains(playerId) || isTerminal()) {
+      return false;
+    }
+    connectedPlayers.remove(playerId);
+    return connectedPlayers.isEmpty();
+  }
+
+  public boolean areAllPlayersDisconnected() {
+    return connectedPlayers.isEmpty();
+  }
+
+  public void setDisconnectTimeoutTask(ScheduledFuture<?> task) {
+    cancelDisconnectTimeout();
+    this.disconnectTimeoutTask = task;
+  }
+
+  public void cancelDisconnectTimeout() {
+    if (this.disconnectTimeoutTask != null) {
+      this.disconnectTimeoutTask.cancel(false);
+      this.disconnectTimeoutTask = null;
+    }
   }
 
   public void recordMove(TMove move, TState newState) {
@@ -91,5 +130,24 @@ public class Match<TState, TMove> {
     this.state = newState;
     this.currentTurnPlayerId =
         players.get(0).equals(currentTurnPlayerId) ? players.get(1) : players.get(0);
+  }
+
+  public void finish() {
+    cancelDisconnectTimeout();
+    stateMachine.transitionTo(MatchStatus.FINISHED);
+  }
+
+  public void abandon() {
+    cancelDisconnectTimeout();
+    stateMachine.transitionTo(MatchStatus.ABANDONED);
+  }
+
+  /** Ensures final result publication happens at most once per match. */
+  public boolean claimResultPublication() {
+    if (resultPublished) {
+      return false;
+    }
+    resultPublished = true;
+    return true;
   }
 }
