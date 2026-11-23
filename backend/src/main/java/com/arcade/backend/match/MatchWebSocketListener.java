@@ -6,6 +6,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 @Component
@@ -41,5 +42,14 @@ public class MatchWebSocketListener {
 
     MatchStateResponse state = matchService.connectPlayer(matchId, user.getName());
     messagingTemplate.convertAndSend(destination, state);
+  }
+
+  @EventListener
+  public void handleDisconnect(SessionDisconnectEvent event) {
+    StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+    Principal user = accessor.getUser();
+    if (user != null) {
+      matchService.handlePlayerSessionClosed(user.getName());
+    }
   }
 }
