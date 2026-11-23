@@ -24,6 +24,8 @@ public class InMemoryMatchRepository implements MatchRepository {
 
   @Override
   public Optional<Match<?, ?>> findByRoomId(long roomId) {
-    return byId.values().stream().filter(m -> m.getRoomId() == roomId).findFirst();
+    return byId.values().stream()
+        .filter(m -> m.getRoomId() == roomId && m.getStatus() != MatchStatus.ABANDONED)
+        .findFirst();
   }
 }

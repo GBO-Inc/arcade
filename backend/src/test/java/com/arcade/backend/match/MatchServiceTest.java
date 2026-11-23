@@ -114,6 +114,33 @@ class MatchServiceTest {
     assertThat(match.getMoves()).isEmpty();
   }
 
+  @Test
+  void abandoningTheRoomsWaitingMatchStopsItAndHidesItFromTheRoom() {
+    MatchService service = new MatchService(repository, registry, new FixedBooleanRandom(true));
+    Match<DummyState, DummyMove> match =
+        service.createFromFullRoom(1L, GameType.TIC_TAC_TOE, List.of("101", "202"));
+    service.connectPlayer(match.getId(), "101");
+
+    service.abandonWaitingMatch(1L);
+
+    assertThat(match.getStatus()).isEqualTo(MatchStatus.ABANDONED);
+    assertThat(repository.findByRoomId(1L)).isEmpty();
+    assertThat(service.connectPlayer(match.getId(), "202").status())
+        .isEqualTo(MatchStatus.ABANDONED);
+    assertThatThrownBy(() -> service.submitMove(match.getId(), "101", new DummyMove("101")))
+        .isInstanceOf(MatchException.class)
+        .hasMessageContaining("not in progress");
+  }
+
+  @Test
+  void abandoningIsANoOpWhenTheRoomHasNoMatch() {
+    MatchService service = new MatchService(repository, registry, new FixedBooleanRandom(true));
+
+    service.abandonWaitingMatch(99L);
+
+    assertThat(repository.findByRoomId(99L)).isEmpty();
+  }
+
   private static final class FixedBooleanRandom extends Random {
     private final boolean value;
 

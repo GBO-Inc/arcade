@@ -48,6 +48,17 @@ public class MatchService {
     return match;
   }
 
+  /** A player left the full room before the match started, so this match can never begin. */
+  public void abandonWaitingMatch(long roomId) {
+    matches
+        .findByRoomId(roomId)
+        .filter(match -> match.getStatus() == MatchStatus.WAITING)
+        .ifPresent(match -> {
+          match.abandon();
+          matches.save(match);
+        });
+  }
+
   public MatchStateResponse connectPlayer(UUID matchId, String playerId) {
     Match<?, ?> match = getMatchOrThrow(matchId);
     if (!match.getPlayers().contains(playerId)) {

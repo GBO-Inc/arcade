@@ -82,6 +82,10 @@ public class Match<TState, TMove> {
     }
   }
 
+  public void abandon() {
+    stateMachine.transitionTo(MatchStatus.ABANDONED);
+  }
+
   public void recordMove(TMove move, TState newState) {
     this.moves.add(move);
     this.state = newState;

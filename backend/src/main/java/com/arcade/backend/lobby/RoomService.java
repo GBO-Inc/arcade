@@ -112,6 +112,9 @@ public class RoomService {
     if (room.getStatus() == RoomStatus.STARTED) {
       throw RoomException.started();
     }
+    if (room.getStatus() == RoomStatus.FULL) {
+      matchService.abandonWaitingMatch(roomId);
+    }
     members.delete(member);
     if (members.countByRoomId(roomId) == 0) {
       room.setStatus(RoomStatus.CLOSED);
