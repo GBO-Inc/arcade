@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.arcade.backend.AbstractIntegrationTest;
 import com.arcade.backend.auth.LoginRequest;
 import com.arcade.backend.auth.RegisterRequest;
+import com.arcade.backend.match.MatchRepository;
+import com.arcade.backend.match.MatchStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -37,6 +39,7 @@ class RoomIT extends AbstractIntegrationTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private JdbcTemplate jdbcTemplate;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private MatchRepository matches;
   @MockitoSpyBean private RoomCodeGenerator codeGenerator;
 
   @AfterEach
@@ -192,6 +195,28 @@ class RoomIT extends AbstractIntegrationTest {
   }
 
   @Test
+  void leavingAFullRoomAbandonsItsWaitingMatchAndTheRefilledRoomGetsANewOne() throws Exception {
+    String alice = signUp("Alice");
+    String bob = signUp("Bob");
+    String carol = signUp("Carol");
+    ResultActions created = createRoom(alice, "TIC_TAC_TOE");
+    long roomId = idOf(created);
+    joinRoom(bob, codeOf(created)).andExpect(status().isOk());
+    var first = matches.findByRoomId(roomId).orElseThrow();
+
+    leaveRoom(bob, roomId).andExpect(status().isNoContent());
+
+    assertThat(first.getStatus()).isEqualTo(MatchStatus.ABANDONED);
+    assertThat(matches.findByRoomId(roomId)).isEmpty();
+
+    joinRoom(carol, codeOf(created)).andExpect(status().isOk());
+
+    var second = matches.findByRoomId(roomId).orElseThrow();
+    assertThat(second.getId()).isNotEqualTo(first.getId());
+    assertThat(second.getPlayers()).containsExactlyInAnyOrder(userIdOf("Alice"), userIdOf("Carol"));
+  }
+
+  @Test
   void aCodeCollisionWithAnActiveRoomIsRetriedWithAnotherCode() throws Exception {
     String taken = codeOf(createRoom(signUp("Alice"), "TIC_TAC_TOE"));
     doReturn(taken).doCallRealMethod().when(codeGenerator).next();
@@ -258,6 +283,11 @@ class RoomIT extends AbstractIntegrationTest {
 
   private int memberCount() {
     return jdbcTemplate.queryForObject("select count(*) from room_members", Integer.class);
+  }
+
+  private String userIdOf(String username) {
+    return jdbcTemplate.queryForObject(
+        "select id from users where username = ?", String.class, username);
   }
 
   private String statusOf(long roomId) {
