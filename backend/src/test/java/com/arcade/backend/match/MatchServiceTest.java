@@ -8,6 +8,7 @@ import com.arcade.backend.engine.dummy.DummyMove;
 import com.arcade.backend.engine.dummy.DummyState;
 import com.arcade.backend.lobby.GameType;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -158,12 +159,13 @@ class MatchServiceTest {
 
     assertThat(match.getStatus()).isEqualTo(MatchStatus.ABANDONED);
     assertThat(repository.findByRoomId(1L)).isEmpty();
+    assertThat(repository.count()).isZero();
     assertThatThrownBy(() -> service.connectPlayer(match.getId(), "202"))
         .isInstanceOf(MatchException.class)
-        .hasMessageContaining("not in progress");
+        .hasMessageContaining("Match not found");
     assertThatThrownBy(() -> service.submitMove(match.getId(), "101", new DummyMove("101")))
         .isInstanceOf(MatchException.class)
-        .hasMessageContaining("not in progress");
+        .hasMessageContaining("Match not found");
   }
 
   @Test
@@ -245,6 +247,45 @@ class MatchServiceTest {
         assertThat(match.getMoves()).containsExactly(new DummyMove("101"));
         assertThat(match.getCurrentTurnPlayerId()).isEqualTo("202");
       }
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void theSameMoveSentTwiceAtOnceIsAppliedOnlyOnce() throws Exception {
+    Match<DummyState, DummyMove> match = startDummyMatch(1L, "101", "202");
+    int attempts = 8;
+
+    ExecutorService pool = Executors.newFixedThreadPool(attempts);
+    try {
+      CountDownLatch go = new CountDownLatch(1);
+      List<Future<Boolean>> results = new ArrayList<>();
+      for (int i = 0; i < attempts; i++) {
+        results.add(
+            pool.submit(() -> {
+              go.await();
+              try {
+                service.submitMove(match.getId(), "101", new DummyMove("101"));
+                return true;
+              } catch (MatchException rejected) {
+                return false;
+              }
+            }));
+      }
+      go.countDown();
+
+      int applied = 0;
+      for (Future<Boolean> result : results) {
+        if (result.get(5, TimeUnit.SECONDS)) {
+          applied++;
+        }
+      }
+
+      assertThat(applied).isEqualTo(1);
+      assertThat(match.getMoves()).containsExactly(new DummyMove("101"));
+      assertThat(match.getState().scores()).containsEntry("101", 1);
+      assertThat(match.getCurrentTurnPlayerId()).isEqualTo("202");
     } finally {
       pool.shutdownNow();
     }

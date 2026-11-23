@@ -96,7 +96,8 @@ public class MatchService implements DisposableBean {
           try {
             if (match.getStatus() == MatchStatus.WAITING) {
               match.abandon();
-              matches.save(match);
+              // It never started, so there is no result to save; just free the memory.
+              matches.deleteById(match.getId());
             }
           } finally {
             match.getLock().unlock();
