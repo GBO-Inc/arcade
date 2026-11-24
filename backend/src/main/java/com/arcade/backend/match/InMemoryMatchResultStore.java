@@ -1,6 +1,7 @@
 package com.arcade.backend.match;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.stereotype.Component;
 
@@ -16,5 +17,10 @@ public class InMemoryMatchResultStore implements MatchResultStore {
 
   public List<MatchFinalResult> findAll() {
     return List.copyOf(results);
+  }
+
+  @Override
+  public boolean existsByMatchId(UUID matchId) {
+    return results.stream().anyMatch(r -> r.matchId().equals(matchId));
   }
 }
