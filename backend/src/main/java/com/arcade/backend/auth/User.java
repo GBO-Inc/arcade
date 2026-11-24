@@ -60,4 +60,9 @@ public class User {
   public Instant getCreatedAt() {
     return createdAt;
   }
+
+  public void updateProfile(String displayName, String avatarColour) {
+    this.displayName = displayName;
+    this.avatarColour = avatarColour;
+  }
 }
