@@ -27,6 +27,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?Add JWT_SECRET to .env (see .env.example)}
       WS_ALLOWED_ORIGINS: ${WS_ALLOWED_ORIGINS:-http://localhost:5173}
+      # Seeds the demo users alice and bob. Off by default; dev-reset.sh and dev-reset.ps1 turn it on.
+      ARCADE_SEED_ENABLED: ${ARCADE_SEED_ENABLED:-false}
     ports:
       - "8080:8080"
     depends_on:
