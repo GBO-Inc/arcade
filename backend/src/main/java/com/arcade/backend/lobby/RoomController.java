@@ -54,6 +54,26 @@ public class RoomController {
     roomEventPublisher.publishRoomListChanged();
   }
 
+  @GetMapping("/{id}")
+  public RoomDetail get(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
+    return roomService.get(userId(jwt), id);
+  }
+
+  @PostMapping("/{id}/ready")
+  public RoomDetail setReady(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable long id,
+      @Valid @RequestBody SetReadyRequest request) {
+    return roomService.setReady(userId(jwt), id, request.ready());
+  }
+
+  @PostMapping("/{id}/close")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void close(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
+    roomService.close(userId(jwt), id);
+    roomEventPublisher.publishRoomListChanged();
+  }
+
   private static long userId(Jwt jwt) {
     return Long.parseLong(jwt.getSubject());
   }

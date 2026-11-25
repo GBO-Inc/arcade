@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -58,6 +59,36 @@ class RoomControllerTest {
     InOrder order = inOrder(roomService, roomEventPublisher);
     order.verify(roomService).leave(7L, 42L);
     order.verify(roomEventPublisher).publishRoomListChanged();
+  }
+
+  @Test
+  void publishesRoomListChangeAfterSuccessfulClose() {
+    controller.close(jwt, 42L);
+
+    InOrder order = inOrder(roomService, roomEventPublisher);
+    order.verify(roomService).close(7L, 42L);
+    order.verify(roomEventPublisher).publishRoomListChanged();
+  }
+
+  @Test
+  void readyDelegatesToTheServiceAndLeavesPublishingToIt() {
+    RoomDetail detail =
+        new RoomDetail(
+            42L, "ABC234", GameType.TIC_TAC_TOE, RoomStatus.FULL, 7L, 2, null, List.of());
+    when(roomService.setReady(7L, 42L, true)).thenReturn(detail);
+
+    assertThat(controller.setReady(jwt, 42L, new SetReadyRequest(true))).isEqualTo(detail);
+
+    verifyNoInteractions(roomEventPublisher);
+  }
+
+  @Test
+  void doesNotPublishWhenCloseFails() {
+    org.mockito.Mockito.doThrow(RoomException.notCreator()).when(roomService).close(7L, 42L);
+
+    assertThatThrownBy(() -> controller.close(jwt, 42L)).isInstanceOf(RoomException.class);
+
+    verifyNoInteractions(roomEventPublisher);
   }
 
   @Test
