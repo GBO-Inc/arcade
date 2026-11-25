@@ -25,10 +25,15 @@ ARCADE_SEED_ENABLED=true docker compose up --build -V -d
 
 echo "Waiting for the backend at ${BACKEND_URL} (up to ${WAIT_SECONDS}s)..."
 deadline=$((SECONDS + WAIT_SECONDS))
-# 401 means the backend answers and requires a token, which is what we want here.
-until [ "$(curl -s -o /dev/null -w '%{http_code}' "${BACKEND_URL}/api/rooms" || true)" = "401" ]; do
+# The seeder runs just after the server starts answering, so wait until alice can log in.
+login_status() {
+  local body="{\"username\":\"alice\",\"password\":\"${DEV_PASSWORD}\"}"
+  curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+    -d "$body" "${BACKEND_URL}/api/auth/login" || true
+}
+until [ "$(login_status)" = "200" ]; do
   if [ "$SECONDS" -ge "$deadline" ]; then
-    echo "The backend did not answer within ${WAIT_SECONDS}s. Check: docker compose logs backend" >&2
+    echo "The demo users were not ready within ${WAIT_SECONDS}s. Check: docker compose logs backend" >&2
     exit 1
   fi
   sleep 2

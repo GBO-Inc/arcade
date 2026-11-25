@@ -9,9 +9,10 @@
 
 $ErrorActionPreference = 'Stop'
 
-function Get-HttpStatusCode([string]$Url) {
+function Get-LoginStatusCode([string]$Url, [string]$Password) {
+    $body = '{"username":"alice","password":"' + $Password + '"}'
     try {
-        $response = Invoke-WebRequest -Uri $Url -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "$Url/api/auth/login" -Method Post -Body $body -ContentType 'application/json' -UseBasicParsing
         return [int]$response.StatusCode
     } catch {
         if ($_.Exception.Response) {
@@ -48,10 +49,10 @@ try {
 
 Write-Host "Waiting for the backend at $backendUrl (up to $waitSeconds seconds)..."
 $deadline = (Get-Date).AddSeconds($waitSeconds)
-# 401 means the backend answers and requires a token, which is what we want here.
-while ((Get-HttpStatusCode "$backendUrl/api/rooms") -ne 401) {
+# The seeder runs just after the server starts answering, so wait until alice can log in.
+while ((Get-LoginStatusCode $backendUrl $devPassword) -ne 200) {
     if ((Get-Date) -gt $deadline) {
-        throw "The backend did not answer within $waitSeconds seconds. Check: docker compose logs backend"
+        throw "The demo users were not ready within $waitSeconds seconds. Check: docker compose logs backend"
     }
     Start-Sleep -Seconds 2
 }

@@ -11,6 +11,9 @@ const BASE_URL = (process.env.ARCADE_URL ?? 'http://localhost:5173').replace(/\/
 const PASSWORD = 'arcade-dev-password';
 const TIMEOUT_MS = 60_000;
 const POLL_MS = 50;
+// The simple broker sends no RECEIPT for SUBSCRIBE, and it registers subscriptions on another
+// thread, so a short pause lets them settle before anything is published to them.
+const SUBSCRIBE_SETTLE_MS = 300;
 const ERROR_QUEUE = '/user/queue/errors';
 const RESET_HINT =
   'a player is still in a room from an earlier run. Run scripts/dev-reset.sh (or scripts/dev-reset.ps1) and try again.';
@@ -131,7 +134,6 @@ class StompClient {
     this.connected = false;
     this.nextSubscription = 0;
     this.subscriptions = new Map();
-    this.receipts = new Set();
     this.inbox = [];
     this.failures = [];
   }
@@ -161,12 +163,9 @@ class StompClient {
 
   subscribe(destination) {
     const id = `sub-${this.nextSubscription++}`;
-    const receipt = `receipt-${id}`;
     this.subscriptions.set(id, destination);
-    this.sendFrame('SUBSCRIBE', { id, destination, receipt });
-    return this.waitUntil(`subscription to ${destination}`, () =>
-      this.receipts.has(receipt) ? true : undefined,
-    );
+    this.sendFrame('SUBSCRIBE', { id, destination });
+    return sleep(SUBSCRIBE_SETTLE_MS);
   }
 
   sendMove(matchId, move) {
@@ -195,8 +194,6 @@ class StompClient {
   handle({ command, headers, body }) {
     if (command === 'CONNECTED') {
       this.connected = true;
-    } else if (command === 'RECEIPT') {
-      this.receipts.add(headers['receipt-id']);
     } else if (command === 'ERROR') {
       this.failures.push(`STOMP error: ${headers.message ?? body}`);
     } else if (command === 'MESSAGE') {
@@ -222,6 +219,16 @@ class StompClient {
       await sleep(POLL_MS);
     }
   }
+}
+
+// Best effort after a failure, so a broken run does not leave both players stuck in the room. A room
+// whose match already started cannot be left; the finished-match release takes care of that one.
+async function leaveRoom(players, roomId) {
+  await Promise.all(
+    players.map((player) =>
+      api('POST', `/api/rooms/${roomId}/leave`, { token: player.token }).catch(() => undefined),
+    ),
+  );
 }
 
 async function playGame(alice, bob, room) {
@@ -310,8 +317,13 @@ async function main() {
   const bob = await step('log in as bob', () => login('bob'));
   const room = await step('alice creates a TIC_TAC_TOE room', () => createRoom(alice));
   console.log(`  room ${room.id}, code ${room.code}`);
-  await step(`bob joins room ${room.code}`, () => joinRoom(bob, room.code));
-  await playGame(alice, bob, room);
+  try {
+    await step(`bob joins room ${room.code}`, () => joinRoom(bob, room.code));
+    await playGame(alice, bob, room);
+  } catch (error) {
+    await leaveRoom([alice, bob], room.id);
+    throw error;
+  }
   console.log('Smoke test passed: a full tic-tac-toe game was played through the stack.');
 }
 
