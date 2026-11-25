@@ -7,12 +7,12 @@ import { SocketProvider } from './hooks/SocketContext';
 import {
   LoginPage,
   RegisterPage,
-  LobbyPage,
   MatchPage,
   LeaderboardPage,
   HistoryPage,
 } from './pages/Placeholders';
 import { ProfilePage } from './pages/ProfilePage';
+import { LobbyPage } from './pages/LobbyPage';
 
 export function AppRoutes() {
   return (
