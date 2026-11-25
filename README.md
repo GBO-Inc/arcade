@@ -93,31 +93,21 @@ docker compose down       # stop; preserve database data
 docker compose down -v    # stop and delete the database volume
 ```
 
-Run `docker compose up --build` again after changing a Dockerfile or `frontend/package.json`.
+Run `docker compose up --build` again after changing a Dockerfile. After `frontend/package.json` changes (for example after pulling new dependencies), run `docker compose up --build -V`: the `-V` flag recreates the container's `node_modules` volume, which otherwise keeps the old packages and the dev server fails with "Cannot find package".
 
 If `docker compose up` stops with "required variable ... is missing a value", copy the missing lines from `.env.example` to `.env` (for example `JWT_SECRET`).
 
 ### Manual frontend
 
-The Vite configuration listens on port 5173 and has no proxy. `VITE_API_BASE_URL` controls the REST base URL; when it is unset, requests use relative `/api` paths. Set it when running the frontend manually against the backend on port 8080. The WebSocket URL follows the same rule: `ws://localhost:8080/ws` when it is set, otherwise `/ws` on the page origin.
-
-macOS/Linux:
+The Vite dev server listens on port 5173 and proxies `/api` and `/ws` to the backend, so the browser only talks to port 5173 and no CORS setup is needed. The proxy target defaults to `http://localhost:8080`; Docker Compose sets `API_PROXY_TARGET=http://backend:8080`. Leave `VITE_API_BASE_URL` unset for local development; it is only needed when the frontend is served without the dev server.
 
 ```sh
-export VITE_API_BASE_URL=http://localhost:8080
 cd frontend
 npm ci
 npm run dev
 ```
 
-Windows PowerShell:
-
-```powershell
-$env:VITE_API_BASE_URL="http://localhost:8080"
-cd frontend
-npm ci
-npm run dev
-```
+If the backend runs somewhere else, set `API_PROXY_TARGET` before `npm run dev` (for example `export API_PROXY_TARGET=http://localhost:9090` or `$env:API_PROXY_TARGET="http://localhost:9090"`).
 
 ### Manual backend
 
