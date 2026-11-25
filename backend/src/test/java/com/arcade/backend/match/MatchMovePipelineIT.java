@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -91,6 +92,49 @@ class MatchMovePipelineIT extends AbstractIntegrationTest {
   }
 
   @Test
+  void ticTacToeMoveIsAppliedAndOccupiedCellIsRejected() throws Exception {
+    Match<?, ?> match =
+        matchService.createFromFullRoom(102L, GameType.TIC_TAC_TOE, List.of("t1", "t2"));
+    UUID matchId = match.getId();
+    String xPlayer = match.getPlayers().get(0);
+    String oPlayer = match.getPlayers().get(1);
+    matchService.connectPlayer(matchId, xPlayer);
+    matchService.connectPlayer(matchId, oPlayer);
+
+    StompSession xSession = connectAs(xPlayer);
+    StompSession oSession = connectAs(oPlayer);
+    BlockingQueue<JsonNode> oTopic = new LinkedBlockingQueue<>();
+    BlockingQueue<MatchErrorMessage> xErrors = new LinkedBlockingQueue<>();
+    BlockingQueue<MatchErrorMessage> oErrors = new LinkedBlockingQueue<>();
+    String moveDest = "/app/match/" + matchId + "/move";
+    oSession.subscribe("/topic/matches/" + matchId, handler(JsonNode.class, oTopic));
+    xSession.subscribe("/user/queue/errors", handler(MatchErrorMessage.class, xErrors));
+    oSession.subscribe("/user/queue/errors", handler(MatchErrorMessage.class, oErrors));
+
+    Thread.sleep(200);
+    oTopic.clear();
+
+    xSession.send(moveDest, Map.of("row", 1, "col", 1));
+    JsonNode applied = oTopic.poll(5, TimeUnit.SECONDS);
+    assertThat(applied).isNotNull();
+    assertThat(applied.get("move").get("row").asInt()).isEqualTo(1);
+    assertThat(applied.get("match").get("state").get("board").get(1).get(1).asText())
+        .isEqualTo("X");
+    assertThat(applied.get("match").get("currentTurnPlayerId").asText()).isEqualTo(oPlayer);
+
+    oSession.send(moveDest, Map.of("row", 1, "col", 1));
+    MatchErrorMessage occupied = oErrors.poll(5, TimeUnit.SECONDS);
+    assertThat(occupied).isNotNull();
+    assertThat(occupied.code()).isEqualTo("INVALID_MOVE");
+    assertThat(occupied.matchId()).isEqualTo(matchId);
+    assertThat(xErrors.poll(200, TimeUnit.MILLISECONDS)).isNull();
+    assertThat(oTopic.poll(200, TimeUnit.MILLISECONDS)).isNull();
+
+    xSession.disconnect();
+    oSession.disconnect();
+  }
+
+  @Test
   void playsDummyGameToCompletionAndRejectsAllInvalidCases() throws Exception {
     Match<?, ?> match =
         matchService.createFromFullRoom(101L, GameType.CONNECT_FOUR, List.of("p1", "p2"));
@@ -130,6 +174,7 @@ class MatchMovePipelineIT extends AbstractIntegrationTest {
     MatchErrorMessage outsiderErr = outsiderErrors.poll(5, TimeUnit.SECONDS);
     assertThat(outsiderErr).isNotNull();
     assertThat(outsiderErr.code()).isEqualTo("NOT_PARTICIPANT");
+    assertThat(outsiderErr.matchId()).isEqualTo(matchId);
     assertThat(outsiderErr.message()).isNotBlank();
     assertThat(firstErrors.poll(200, TimeUnit.MILLISECONDS)).isNull();
     assertThat(secondErrors.poll(200, TimeUnit.MILLISECONDS)).isNull();

@@ -6,9 +6,7 @@ import com.arcade.backend.engine.MoveResult;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TicTacToeGameEngine implements GameEngine<TicTacToeState, TicTacToeMove, String> {
 
   public static final String GAME_ID = "tic-tac-toe";
