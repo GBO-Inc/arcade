@@ -1,6 +1,6 @@
 # Realtime WebSocket (STOMP) Contract
 
-> **Governance:** Changes to this contract require approval from all three team members before merging.
+> **Governance:** Changes to this contract require updating `docs/realtime-contract.md` and `frontend/src/contract/` in the same PR and approval from all three team members before merging.
 
 ## 1. Connection & Authentication
 
@@ -19,14 +19,106 @@
 | Server -> Clients | `/topic/**` | Broadcast messages delivered to all subscribers of the topic. |
 | Server -> Client | `/user/queue/**` | Private messages delivered only to the authenticated user's session. Raw `/queue/**` and `/user/{name}/**` subscriptions are rejected. |
 
+### Message Summary
+| Message | Destination | Direction | Payload Type |
+| --- | --- | --- | --- |
+| Echo request | `/app/echo` | Client -> Server | `EchoRequest` |
+| Echo response | `/user/queue/echo` | Server -> Client | `EchoResponse` |
+| Room event | `/topic/rooms/{code}` | Server -> Client | `RoomEvent` |
+| Match state | `/topic/matches/{matchId}` | Server -> Client | `MatchStateResponse` |
+| Submit move | `/app/match/{id}/move` | Client -> Server | `MatchMoveRequest` |
+| Move applied broadcast | `/topic/matches/{matchId}` | Server -> Client | `MatchMoveEvent` |
+| Match final result | `/topic/matches/{matchId}`, `/user/queue/match-result` | Server -> Client | `MatchFinalResult` |
+| Error | `/user/queue/errors` | Server -> Client | `ErrorMessage` |
+| Send chat | `/app/match/{id}/chat` | Client -> Server | `ChatSendRequest` |
+| Chat broadcast | `/topic/matches/{matchId}/chat` | Server -> Client | `ChatMessage` |
+| Clock update | `/topic/matches/{matchId}/clock` | Server -> Client | `ClockUpdate` |
+| Room list invalidation | `/topic/rooms` | Server -> Client | `RoomListChangedEvent` |
 ---
 
-## 2. Match Move Pipeline
+## 2. Echo
 
-### 2.1 Submit a Move (Client -> Server)
+### 2.1 Echo Request (Client -> Server)
+- **Destination:** `/app/echo`
+- **Payload (`EchoRequest`):**
+
+<!-- type: EchoRequest -->
+```json
+{
+  "message": "ping"
+}
+```
+
+### 2.2 Echo Response (Server -> Client)
+- **Destination:** `/user/queue/echo`
+- **Payload (`EchoResponse`):**
+
+<!-- type: EchoResponse -->
+```json
+{
+  "message": "ping",
+  "sender": "player-1",
+  "timestamp": "2026-11-25T14:00:00Z"
+}
+```
+
+---
+
+## 3. Room Events
+
+### 3.1 Room Event Broadcast (Server -> Room Subscribers)
+- **Destination:** `/topic/rooms/{code}`
+- **Payload (`RoomEvent`):**
+
+<!-- type: RoomEvent -->
+```json
+{
+  "type": "PLAYER_JOINED",
+  "roomCode": "ABC123",
+  "gameType": "TIC_TAC_TOE",
+  "players": ["player-1", "player-2"],
+  "matchId": null
+}
+```
+
+---
+
+## 4. Match State & Move Pipeline
+
+### 4.1 Match State Snapshot (Server -> Both Players)
+- **Destination:** `/topic/matches/{matchId}`
+- **Trigger:** Published when a match starts or when full state is broadcast.
+- **Payload (`MatchStateResponse`):**
+
+<!-- type: MatchStateResponse -->
+```json
+{
+  "matchId": "550e8400-e29b-41d4-a716-446655440000",
+  "roomId": 42,
+  "gameType": "TIC_TAC_TOE",
+  "status": "IN_PROGRESS",
+  "players": ["player-1", "player-2"],
+  "currentTurnPlayerId": "player-1",
+  "state": {
+    "board": [
+      [null, null, null],
+      [null, null, null],
+      [null, null, null]
+    ],
+    "xPlayer": "player-1",
+    "oPlayer": "player-2",
+    "currentPlayer": "player-1"
+  },
+  "moveCount": 0
+}
+```
+
+---
+
+### 4.2 Submit a Move (Client -> Server)
 - **Destination:** `/app/match/{id}/move`
 - **Path Variable:** `id` — Match UUID.
-- **Payload:** Game-specific JSON move object.
+- **Payload (`MatchMoveRequest`):** Game-specific JSON move object (`TicTacToeMove` for `TIC_TAC_TOE`, `DummyMove` for `CONNECT_FOUR` / `CHECKERS`).
 
 **Server Processing Order:**
 1. Authenticate the STOMP session (`Principal`).
@@ -43,14 +135,22 @@
 | --- | --- | --- |
 | `TIC_TAC_TOE` | `TicTacToeMove`: zero-based `row` and `col` (0-2) | `{"row": 1, "col": 2}` |
 | `CONNECT_FOUR`, `CHECKERS` | `DummyMove` placeholder until their engines exist | `{"playerId": "player-1"}` |
+<!-- type: MatchMoveRequest -->
+```json
+{
+  "row": 0,
+  "col": 2
+}
+```
 
 ---
 
-### 2.2 Move Applied Broadcast (Server -> Both Players)
+### 4.3 Move Applied Broadcast (Server -> Both Players)
 - **Destination:** `/topic/matches/{matchId}`
 - **Trigger:** Published after every valid move is applied.
 - **Payload (`MatchMoveEvent`):**
 
+<!-- type: MatchMoveEvent -->
 ```json
 {
   "match": {
@@ -62,8 +162,8 @@
     "currentTurnPlayerId": "player-2",
     "state": {
       "board": [
-        [null, null, null],
         [null, null, "X"],
+        [null, null, null],
         [null, null, null]
       ],
       "xPlayer": "player-1",
@@ -73,7 +173,7 @@
     "moveCount": 1
   },
   "move": {
-    "row": 1,
+    "row": 0,
     "col": 2
   },
   "movedBy": "player-1"
@@ -83,18 +183,19 @@
 | Field | Type | Description |
 | --- | --- | --- |
 | `match` | `MatchStateResponse` | Full updated match snapshot after applying the move. |
-| `move` | `Object` | The move payload that was just applied. |
+| `move` | `MatchMoveRequest` | The move payload that was just applied. |
 | `movedBy` | `string` | ID of the player who submitted the move. |
 
 ---
 
-### 2.3 Match Final Result (Server -> Both Players)
+### 4.4 Match Final Result (Server -> Both Players)
 - **Destinations:**
   - `/user/queue/match-result` (sent individually to each participant)
   - `/topic/matches/{matchId}` (broadcast to match subscribers)
 - **Trigger:** Published at most once when a match reaches a terminal state (`FINISHED` or `ABANDONED`).
 - **Payload (`MatchFinalResult`):**
 
+<!-- type: MatchFinalResult -->
 ```json
 {
   "matchId": "550e8400-e29b-41d4-a716-446655440000",
@@ -113,7 +214,7 @@
 | `winnerId` | `string \| null` | Winner's player ID when `outcome` is `WIN`; otherwise `null`. |
 | `reason` | `string` | Human-readable reason for match termination. |
 
-## 3. Lobby Room List Invalidation
+## 5. Lobby Room List Invalidation
 
 When a room is created, joined, or left successfully, the server broadcasts an invalidation
 event. Clients should refetch `GET /api/rooms` to obtain the authoritative list of open rooms.
@@ -121,6 +222,7 @@ event. Clients should refetch `GET /api/rooms` to obtain the authoritative list 
 - **Destination:** `/topic/rooms`
 - **Payload (`RoomListChangedEvent`):**
 
+<!-- type: RoomListChangedEvent -->
 ```json
 {
   "type": "ROOM_LIST_CHANGED"
@@ -132,13 +234,14 @@ snapshot; clients use the REST list endpoint for current room data.
 
 ---
 
-## 4. Error Handling (Server -> Sender Only)
+## 6. Error Handling (Server -> Sender Only)
 
 When a move is rejected, **the match state remains unchanged**, no broadcast is sent to `/topic/matches/{matchId}`, and a private error message is sent **only to the sender**.
 
 - **Destination:** `/user/queue/errors`
-- **Payload (`MatchErrorMessage`):**
+- **Payload (`ErrorMessage`):**
 
+<!-- type: ErrorMessage -->
 ```json
 {
   "code": "NOT_YOUR_TURN",
@@ -151,7 +254,7 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 | --- | --- | --- |
 | `code` | `string` | Machine-readable error code. |
 | `message` | `string` | Human-readable error description. |
-| `matchId` | `UUID` | The match the rejected move was sent to. |
+| `matchId` | `UUID \| null` | The match the rejected move was sent to, if applicable. |
 
 ### Error Codes
 | `code` | Trigger |
@@ -165,16 +268,50 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 
 ---
 
-## 5. REST: Load a Match
+## 7. Chat
 
-Used by the match page to load a match before it joins the topic, and to tell "unknown match" from "not your match".
+### 7.1 Send Chat Message (Client -> Server)
+- **Destination:** `/app/match/{id}/chat`
+- **Payload (`ChatSendRequest`):**
 
-- **Request:** `GET /api/matches/{id}` with `Authorization: Bearer <jwt>`. `id` is the match UUID.
-- **Response `200`:** `MatchStateResponse`, the same shape as `match` in section 2.2.
-- **Errors** (`ErrorResponse` body, `message` carries the text):
+<!-- type: ChatSendRequest -->
+```json
+{
+  "text": "Good luck!"
+}
+```
 
-| Status | Trigger |
-| --- | --- |
-| `401` | Missing or invalid token. |
-| `403` | The authenticated user is not one of the two players. |
-| `404` | No live match with this ID. Finished matches leave memory, so their result is only delivered on the topic. |
+### 7.2 Chat Message Broadcast (Server -> Both Players)
+- **Destination:** `/topic/matches/{matchId}/chat`
+- **Payload (`ChatMessage`):**
+
+<!-- type: ChatMessage -->
+```json
+{
+  "matchId": "550e8400-e29b-41d4-a716-446655440000",
+  "sender": "player-1",
+  "text": "Good luck!",
+  "sentAt": "2026-11-25T14:01:00Z"
+}
+```
+
+---
+
+## 8. Clock
+
+### 8.1 Clock Update (Server -> Both Players)
+- **Destination:** `/topic/matches/{matchId}/clock`
+- **Payload (`ClockUpdate`):**
+
+<!-- type: ClockUpdate -->
+```json
+{
+  "matchId": "550e8400-e29b-41d4-a716-446655440000",
+  "activePlayer": "player-1",
+  "remainingMs": {
+    "player-1": 295000,
+    "player-2": 300000
+  },
+  "serverTime": "2026-11-25T14:01:05Z"
+}
+```
