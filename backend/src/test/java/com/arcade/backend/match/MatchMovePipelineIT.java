@@ -130,6 +130,7 @@ class MatchMovePipelineIT extends AbstractIntegrationTest {
     MatchErrorMessage outsiderErr = outsiderErrors.poll(5, TimeUnit.SECONDS);
     assertThat(outsiderErr).isNotNull();
     assertThat(outsiderErr.code()).isEqualTo("NOT_PARTICIPANT");
+    assertThat(outsiderErr.matchId()).isEqualTo(matchId);
     assertThat(outsiderErr.message()).isNotBlank();
     assertThat(firstErrors.poll(200, TimeUnit.MILLISECONDS)).isNull();
     assertThat(secondErrors.poll(200, TimeUnit.MILLISECONDS)).isNull();

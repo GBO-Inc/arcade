@@ -39,11 +39,13 @@ public class MatchWebSocketController {
   }
 
   @MessageExceptionHandler(MatchException.class)
-  public void handleMatchException(MatchException ex, Principal principal) {
+  public void handleMatchException(
+      MatchException ex, @DestinationVariable("id") UUID matchId, Principal principal) {
     if (principal == null) {
       return;
     }
-    MatchErrorMessage error = new MatchErrorMessage(ex.getCode(), ex.getBody().getDetail(), null);
+    MatchErrorMessage error =
+        new MatchErrorMessage(ex.getCode(), ex.getBody().getDetail(), matchId);
     messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/errors", error);
   }
 

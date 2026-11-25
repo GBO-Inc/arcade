@@ -30,11 +30,12 @@
 
 **Server Processing Order:**
 1. Authenticate the STOMP session (`Principal`).
-2. Verify the match exists and is active (`IN_PROGRESS`).
+2. Verify the match exists and deserialize the move for its game type.
 3. Verify the authenticated player belongs to the match.
-4. Verify it is the player's turn.
-5. Deserialize and validate/apply the move via the game's `GameEngine`.
-6. Broadcast the updated state + applied move to both players. If the move ends the game, finalize the match and publish the final result.
+4. Verify the match is not finished and is `IN_PROGRESS`.
+5. Verify it is the player's turn.
+6. Validate and apply the move via the game's `GameEngine`.
+7. Broadcast the updated state + applied move to both players. If the move ends the game, finalize the match and publish the final result.
 
 **Example Payload (`DummyMove` — currently used for `TIC_TAC_TOE`):**
 ```json
@@ -122,7 +123,7 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 {
   "code": "NOT_YOUR_TURN",
   "message": "Not your turn",
-  "matchId": null
+  "matchId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -130,12 +131,12 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 | --- | --- | --- |
 | `code` | `string` | Machine-readable error code. |
 | `message` | `string` | Human-readable error description. |
-| `matchId` | `UUID \| null` | Optional match identifier associated with the error. |
+| `matchId` | `UUID` | The match the rejected move was sent to. |
 
 ### Error Codes
 | `code` | Trigger |
 | --- | --- |
-| `MATCH_NOT_FOUND` | No active or completed match exists with the given ID. |
+| `MATCH_NOT_FOUND` | No live or finished match exists with the given ID. |
 | `NOT_PARTICIPANT` | Authenticated user is not one of the two players in the match. |
 | `MATCH_NOT_IN_PROGRESS` | Match is still `WAITING` for both players to connect. |
 | `MATCH_FINISHED` | Match is already `FINISHED` or `ABANDONED`. |

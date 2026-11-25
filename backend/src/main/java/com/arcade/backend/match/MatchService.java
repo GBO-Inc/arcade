@@ -144,25 +144,12 @@ public class MatchService implements DisposableBean {
   }
 
   public GameType getMatchGameType(UUID matchId) {
-    return matches
-        .findById(matchId)
-        .map(Match::getGameType)
-        .orElseThrow(() ->
-            resultStore.existsByMatchId(matchId)
-                ? MatchException.matchFinished()
-                : MatchException.notFound());
+    return getLiveMatchOrThrow(matchId).getGameType();
   }
 
   @SuppressWarnings("unchecked")
   public <TState, TMove> MatchStateResponse submitMove(UUID matchId, String playerId, TMove move) {
-    Match<TState, TMove> match =
-        (Match<TState, TMove>)
-            matches
-                .findById(matchId)
-                .orElseThrow(() ->
-                    resultStore.existsByMatchId(matchId)
-                        ? MatchException.matchFinished()
-                        : MatchException.notFound());
+    Match<TState, TMove> match = (Match<TState, TMove>) getLiveMatchOrThrow(matchId);
 
     match.getLock().lock();
     try {
@@ -283,6 +270,16 @@ public class MatchService implements DisposableBean {
 
   private Match<?, ?> getMatchOrThrow(UUID matchId) {
     return matches.findById(matchId).orElseThrow(MatchException::notFound);
+  }
+
+  /** Finished matches leave memory, so the result store tells "finished" apart from "unknown". */
+  private Match<?, ?> getLiveMatchOrThrow(UUID matchId) {
+    return matches
+        .findById(matchId)
+        .orElseThrow(() ->
+            resultStore.existsByMatchId(matchId)
+                ? MatchException.matchFinished()
+                : MatchException.notFound());
   }
 
   @Override
