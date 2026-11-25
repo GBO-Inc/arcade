@@ -18,6 +18,7 @@ public class RoomMember {
   private Long roomId;
   private Long userId;
   private Instant joinedAt;
+  private boolean ready;
 
   protected RoomMember() {}
 
@@ -41,5 +42,13 @@ public class RoomMember {
 
   public Instant getJoinedAt() {
     return joinedAt;
+  }
+
+  public boolean isReady() {
+    return ready;
+  }
+
+  public void setReady(boolean ready) {
+    this.ready = ready;
   }
 }

@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { LobbyPage } from './pages/LobbyPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { WaitingRoomPage } from './pages/WaitingRoomPage';
 
 export function AppRoutes() {
   return (
@@ -30,6 +31,14 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <LobbyPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="rooms/:id"
+          element={
+            <ProtectedRoute>
+              <WaitingRoomPage />
             </ProtectedRoute>
           }
         />

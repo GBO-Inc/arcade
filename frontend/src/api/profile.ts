@@ -24,6 +24,11 @@ export const AVATAR_PALETTE = [
   { hex: '#EC4899', name: 'Pink' },
 ] as const;
 
+/** The palette name of a colour, or Grey for no colour or an unknown one. */
+export function colourName(hex: string | null | undefined) {
+  return AVATAR_PALETTE.find((colour) => colour.hex === hex)?.name ?? 'Grey';
+}
+
 export function getProfile(userId: number | string) {
   return apiClient.get<Profile>(`/api/profile/${userId}`);
 }

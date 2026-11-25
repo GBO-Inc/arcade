@@ -1,12 +1,8 @@
-import { AVATAR_PALETTE, type Profile } from '../../api/profile';
+import { colourName, type Profile } from '../../api/profile';
 import { Card } from '../ui';
 import { playerName } from './playerName';
 
 const NO_COLOUR = '#9CA3AF';
-
-function colourName(hex: string | null | undefined) {
-  return AVATAR_PALETTE.find((colour) => colour.hex === hex)?.name ?? 'Grey';
-}
 
 export function PlayerPanel({
   playerId,

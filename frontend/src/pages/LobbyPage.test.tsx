@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ACCESS_TOKEN_KEY } from '../api/client';
 import { AuthProvider } from '../hooks/AuthContext';
@@ -39,13 +39,16 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function renderLobby() {
+function renderLobby(state?: { notice: string | null }) {
   localStorage.setItem(ACCESS_TOKEN_KEY, 'valid-token');
   return render(
-    <MemoryRouter initialEntries={['/lobby']}>
+    <MemoryRouter initialEntries={[{ pathname: '/lobby', state }]}>
       <AuthProvider>
         <SocketProvider createClient={FakeStompClient.create}>
-          <LobbyPage />
+          <Routes>
+            <Route path="/lobby" element={<LobbyPage />} />
+            <Route path="/rooms/:id" element={<h1>Waiting room page</h1>} />
+          </Routes>
         </SocketProvider>
       </AuthProvider>
     </MemoryRouter>,
@@ -116,7 +119,7 @@ describe('LobbyPage', () => {
     expect(screen.getByRole('radio', { name: 'Checkers' })).toBeVisible();
   });
 
-  it('creates a selected game and displays the generated room code', async () => {
+  it('creates a selected game and opens its waiting room', async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockImplementation(
       (input: RequestInfo | URL, init?: RequestInit) => {
@@ -140,12 +143,7 @@ describe('LobbyPage', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('dialog', { name: 'Room created' }),
-    ).toBeVisible();
-    expect(
-      within(screen.getByRole('dialog')).getByLabelText('Room code'),
-    ).toHaveTextContent('ABC234');
+    expect(await screen.findByText('Waiting room page')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/rooms',
       expect.objectContaining({
@@ -153,7 +151,54 @@ describe('LobbyPage', () => {
         body: JSON.stringify({ gameType: 'CHECKERS' }),
       }),
     );
-    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible();
+  });
+
+  it('opens the waiting room after joining by code', async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/me')) {
+        return Promise.resolve(jsonResponse({ id: 7 }));
+      }
+      if (url.endsWith('/api/rooms/join')) {
+        return Promise.resolve(jsonResponse(ROOM));
+      }
+      return Promise.resolve(jsonResponse([ROOM]));
+    });
+    renderLobby();
+
+    fireEvent.change(
+      await screen.findByRole('textbox', { name: 'Room code' }),
+      { target: { value: 'ABC234' } },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Join room' }));
+
+    expect(await screen.findByText('Waiting room page')).toBeVisible();
+  });
+
+  it('opens the waiting room after joining from a room row', async () => {
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/me')) {
+        return Promise.resolve(jsonResponse({ id: 7 }));
+      }
+      if (url.endsWith('/api/rooms/join')) {
+        return Promise.resolve(jsonResponse(ROOM));
+      }
+      return Promise.resolve(jsonResponse([ROOM]));
+    });
+    renderLobby();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Join' }));
+
+    expect(await screen.findByText('Waiting room page')).toBeVisible();
+  });
+
+  it('shows the message left by a closed waiting room', async () => {
+    renderLobby({ notice: 'The room was closed by its creator.' });
+
+    expect(
+      await screen.findByText('The room was closed by its creator.'),
+    ).toBeVisible();
   });
 
   it('validates room codes and sends normalized valid codes', async () => {
