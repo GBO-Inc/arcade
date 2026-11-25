@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { devProxy } from './devProxy.js';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -11,6 +12,7 @@ export default defineConfig({
     strictPort: true,
     // File change events do not cross Docker bind mounts on Windows and macOS.
     watch: { usePolling: true },
+    proxy: devProxy(process.env.API_PROXY_TARGET),
   },
   test: {
     globals: true,
