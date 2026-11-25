@@ -96,11 +96,13 @@ class WaitingRoomIT extends AbstractIntegrationTest {
       assertThat(seat(updated.get("room"), bob.id()).get("ready").asBoolean()).isFalse();
     }
 
-    setReady(bob, roomId, true).andExpect(status().isOk());
+    JsonNode started = bodyOf(setReady(bob, roomId, true).andExpect(status().isOk()));
+    assertThat(started.get("status").asText()).isEqualTo("STARTED");
 
     String aliceMatch = nextEvent(aliceEvents, "MATCH_STARTED").get("matchId").asText();
     String bobMatch = nextEvent(bobEvents, "MATCH_STARTED").get("matchId").asText();
-    assertThat(aliceMatch).isEqualTo(bobMatch);
+    assertThat(aliceMatch).isEqualTo(bobMatch).isEqualTo(started.get("matchId").asText());
+    getRoom(alice, roomId).andExpect(jsonPath("$.matchId").value(aliceMatch));
     getMatch(alice, aliceMatch).andExpect(status().isOk());
     getMatch(bob, aliceMatch).andExpect(status().isOk());
     assertThat(statusOf(roomId)).isEqualTo("STARTED");

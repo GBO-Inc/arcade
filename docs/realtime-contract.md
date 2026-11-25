@@ -158,6 +158,7 @@ All requests need `Authorization: Bearer <jwt>`. Errors use the `ErrorResponse` 
   "status": "FULL",
   "creatorId": 7,
   "capacity": 2,
+  "matchId": null,
   "seats": [
     { "userId": 7, "displayName": "Alice", "avatarColour": "#EF4444", "ready": true },
     { "userId": 9, "displayName": "Bob", "avatarColour": null, "ready": false }
@@ -166,6 +167,8 @@ All requests need `Authorization: Bearer <jwt>`. Errors use the `ErrorResponse` 
 ```
 
 `seats` lists the players in join order; an empty seat is simply absent (`capacity - seats.length`).
+`matchId` is `null` until the room has started (`status` `STARTED`), then holds the match UUID. A
+client that missed `MATCH_STARTED`, for example after a reconnect, finds its match here.
 
 | Status | Trigger |
 | --- | --- |

@@ -31,6 +31,7 @@ class StompRoomEventPublisherTest {
             RoomStatus.FULL,
             7L,
             2,
+            null,
             List.of(new RoomSeat(7L, "Alice", "#EF4444", true)));
 
     publisher.publishRoomUpdated(room);

@@ -73,7 +73,8 @@ class RoomControllerTest {
   @Test
   void readyDelegatesToTheServiceAndLeavesPublishingToIt() {
     RoomDetail detail =
-        new RoomDetail(42L, "ABC234", GameType.TIC_TAC_TOE, RoomStatus.FULL, 7L, 2, List.of());
+        new RoomDetail(
+            42L, "ABC234", GameType.TIC_TAC_TOE, RoomStatus.FULL, 7L, 2, null, List.of());
     when(roomService.setReady(7L, 42L, true)).thenReturn(detail);
 
     assertThat(controller.setReady(jwt, 42L, new SetReadyRequest(true))).isEqualTo(detail);

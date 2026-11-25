@@ -3,6 +3,8 @@ package com.arcade.backend.lobby;
 import com.arcade.backend.auth.AccountNotFoundException;
 import com.arcade.backend.auth.User;
 import com.arcade.backend.auth.UserRepository;
+import com.arcade.backend.match.Match;
+import com.arcade.backend.match.MatchRepository;
 import com.arcade.backend.match.MatchService;
 import java.time.Clock;
 import java.time.Instant;
@@ -30,6 +32,7 @@ public class RoomService {
   private final UserRepository users;
   private final RoomCodeGenerator codeGenerator;
   private final MatchService matchService;
+  private final MatchRepository matchRepository;
   private final RoomEventPublisher roomEvents;
   private final Clock clock;
   private final TransactionTemplate transaction;
@@ -40,6 +43,7 @@ public class RoomService {
       UserRepository users,
       RoomCodeGenerator codeGenerator,
       MatchService matchService,
+      MatchRepository matchRepository,
       RoomEventPublisher roomEvents,
       Clock clock,
       PlatformTransactionManager transactionManager) {
@@ -48,6 +52,7 @@ public class RoomService {
     this.users = users;
     this.codeGenerator = codeGenerator;
     this.matchService = matchService;
+    this.matchRepository = matchRepository;
     this.roomEvents = roomEvents;
     this.clock = clock;
     this.transaction = new TransactionTemplate(transactionManager);
@@ -222,7 +227,15 @@ public class RoomService {
         room.getStatus(),
         room.getCreatorId(),
         room.getCapacity(),
+        matchIdOf(room),
         seats);
+  }
+
+  private UUID matchIdOf(Room room) {
+    if (room.getStatus() != RoomStatus.STARTED) {
+      return null;
+    }
+    return matchRepository.findByRoomId(room.getId()).map(Match::getId).orElse(null);
   }
 
   private static RoomSeat seat(RoomMember member, User user) {

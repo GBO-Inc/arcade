@@ -1,21 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
   createRoom,
+  GAMES as games,
   joinRoom,
   listRooms,
   ROOM_CODE_PATTERN,
   type GameType,
   type Room,
 } from '../api/rooms';
-import { Button, Card, Dialog, TextField } from '../components/ui';
+import { Button, Card, Dialog, TextField, Toast } from '../components/ui';
 import { useSocket } from '../hooks/socket';
 
-const games: { type: GameType; label: string }[] = [
-  { type: 'TIC_TAC_TOE', label: 'Tic-Tac-Toe' },
-  { type: 'CONNECT_FOUR', label: 'Connect Four' },
-  { type: 'CHECKERS', label: 'Checkers' },
-];
+function noticeFrom(state: unknown) {
+  return typeof state === 'object' &&
+    state !== null &&
+    'notice' in state &&
+    typeof state.notice === 'string'
+    ? state.notice
+    : null;
+}
 
 function errorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
@@ -35,6 +40,10 @@ function isRoomListChangedEvent(body: unknown) {
 
 export function LobbyPage() {
   const { status, subscribe } = useSocket();
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Read once: the history entry is cleared below so a refresh does not show it again.
+  const [notice, setNotice] = useState(() => noticeFrom(location.state));
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -42,7 +51,6 @@ export function LobbyPage() {
   const [selectedGame, setSelectedGame] = useState<GameType>('TIC_TAC_TOE');
   const [createPending, setCreatePending] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [createdRoom, setCreatedRoom] = useState<Room | null>(null);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
   const [codePending, setCodePending] = useState(false);
@@ -88,6 +96,12 @@ export function LobbyPage() {
     };
   }, [refreshRooms]);
 
+  useEffect(() => {
+    if (location.state !== null) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
+
   useEffect(
     () =>
       subscribe('/topic/rooms', (body) => {
@@ -108,13 +122,11 @@ export function LobbyPage() {
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setCreateError(null);
-    setCreatedRoom(null);
     setCreatePending(true);
     try {
       const room = await createRoom(selectedGame);
       if (active.current) {
-        setCreatedRoom(room);
-        void refreshRooms();
+        navigate(`/rooms/${room.id}`);
       }
     } catch (error: unknown) {
       if (active.current) {
@@ -131,10 +143,9 @@ export function LobbyPage() {
     setCodeError(null);
     setCodePending(true);
     try {
-      await joinRoom(roomCode);
+      const room = await joinRoom(roomCode);
       if (active.current) {
-        setCode('');
-        void refreshRooms();
+        navigate(`/rooms/${room.id}`);
       }
     } catch (error: unknown) {
       if (active.current) {
@@ -163,9 +174,9 @@ export function LobbyPage() {
     setRowError(null);
     setRowPending(room.id);
     try {
-      await joinRoom(room.code);
+      const joined = await joinRoom(room.code);
       if (active.current) {
-        void refreshRooms();
+        navigate(`/rooms/${joined.id}`);
       }
     } catch (error: unknown) {
       if (active.current) {
@@ -187,7 +198,6 @@ export function LobbyPage() {
     }
     setCreateDialogOpen(false);
     setCreateError(null);
-    setCreatedRoom(null);
     setSelectedGame('TIC_TAC_TOE');
   }
 
@@ -301,60 +311,58 @@ export function LobbyPage() {
 
       <Dialog
         open={createDialogOpen}
-        title={createdRoom ? 'Room created' : 'Create room'}
+        title="Create room"
         onClose={closeCreateDialog}
       >
-        {createdRoom ? (
-          <div className="space-y-ui-4">
-            <p>Share this code with the player you want to invite:</p>
-            <p
-              aria-label="Room code"
-              className="rounded-ui-lg bg-ui-surface-raised px-ui-4 py-ui-3 text-center font-mono text-ui-2xl font-bold tracking-widest"
-            >
-              {createdRoom.code}
+        <form noValidate className="space-y-ui-4" onSubmit={handleCreate}>
+          <fieldset className="space-y-ui-2">
+            <legend className="text-ui-sm font-medium text-ui-text">
+              Choose a game
+            </legend>
+            {games.map((game) => (
+              <label key={game.type} className="flex items-center gap-ui-2">
+                <input
+                  type="radio"
+                  name="gameType"
+                  value={game.type}
+                  checked={selectedGame === game.type}
+                  onChange={() => setSelectedGame(game.type)}
+                />
+                <span>{game.label}</span>
+              </label>
+            ))}
+          </fieldset>
+          {createError && (
+            <p role="alert" className="text-ui-error">
+              {createError}
             </p>
-            <Button onClick={closeCreateDialog}>Close</Button>
+          )}
+          <div className="flex justify-end gap-ui-3">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={createPending}
+              onClick={closeCreateDialog}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={createPending}>
+              Create room
+            </Button>
           </div>
-        ) : (
-          <form noValidate className="space-y-ui-4" onSubmit={handleCreate}>
-            <fieldset className="space-y-ui-2">
-              <legend className="text-ui-sm font-medium text-ui-text">
-                Choose a game
-              </legend>
-              {games.map((game) => (
-                <label key={game.type} className="flex items-center gap-ui-2">
-                  <input
-                    type="radio"
-                    name="gameType"
-                    value={game.type}
-                    checked={selectedGame === game.type}
-                    onChange={() => setSelectedGame(game.type)}
-                  />
-                  <span>{game.label}</span>
-                </label>
-              ))}
-            </fieldset>
-            {createError && (
-              <p role="alert" className="text-ui-error">
-                {createError}
-              </p>
-            )}
-            <div className="flex justify-end gap-ui-3">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={createPending}
-                onClick={closeCreateDialog}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" loading={createPending}>
-                Create room
-              </Button>
-            </div>
-          </form>
-        )}
+        </form>
       </Dialog>
+
+      {notice && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm">
+          <Toast
+            message={notice}
+            variant="info"
+            duration={6000}
+            onDismiss={() => setNotice(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }
