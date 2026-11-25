@@ -81,6 +81,7 @@ public class RoomService {
   @Transactional
   public RoomResponse join(long userId, String code) {
     requireUser(userId);
+    releaseSeatOfFinishedMatch(userId);
     Room room =
         rooms
             .findActiveByCodeForUpdate(code.trim().toUpperCase(Locale.ROOT))
@@ -191,6 +192,31 @@ public class RoomService {
     publishRoomUpdatedAfterCommit(room);
   }
 
+  /**
+   * A finished match leaves memory, but its room stays STARTED with both players still seated. A
+   * seat whose match is over holds nobody any more, so it is given up before the player sits down
+   * somewhere else; the room closes when its last seat goes. This runs before the target room is
+   * locked, so rooms are always locked in the same order.
+   */
+  private void releaseSeatOfFinishedMatch(long userId) {
+    members
+        .findByUserId(userId)
+        .ifPresent(seat -> {
+          Room room = rooms.findActiveByIdForUpdate(seat.getRoomId()).orElse(null);
+          if (room == null
+              || room.getStatus() != RoomStatus.STARTED
+              || matchRepository.findByRoomId(room.getId()).isPresent()) {
+            return;
+          }
+          // Flushed now: Hibernate would otherwise insert the new seat before deleting this one.
+          members.delete(seat);
+          members.flush();
+          if (members.countByRoomId(room.getId()) == 0) {
+            room.setStatus(RoomStatus.CLOSED);
+          }
+        });
+  }
+
   private void startMatch(Room room, List<RoomMember> seated) {
     List<String> playerIds = seated.stream().map(m -> String.valueOf(m.getUserId())).toList();
     UUID matchId =
@@ -245,6 +271,7 @@ public class RoomService {
 
   private RoomResponse createOnce(long userId, GameType gameType) {
     requireUser(userId);
+    releaseSeatOfFinishedMatch(userId);
     if (members.existsByUserId(userId)) {
       throw RoomException.alreadyInRoom();
     }

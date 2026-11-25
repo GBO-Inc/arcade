@@ -13,12 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.arcade.backend.AbstractIntegrationTest;
 import com.arcade.backend.auth.LoginRequest;
 import com.arcade.backend.auth.RegisterRequest;
+import com.arcade.backend.engine.tictactoe.TicTacToeMove;
 import com.arcade.backend.match.MatchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -208,6 +210,39 @@ class WaitingRoomIT extends AbstractIntegrationTest {
     assertThat(statusOf(roomId)).isEqualTo("CLOSED");
     getRoom(bob, roomId).andExpect(status().isNotFound());
     postJson("/api/rooms", bob.token(), TIC_TAC_TOE).andExpect(status().isCreated());
+  }
+
+  @Test
+  void playersAreFreeForANewRoomOnceTheirMatchHasEnded() throws Exception {
+    Player alice = signUp("Alice");
+    Player bob = signUp("Bob");
+    long roomId = createAndJoin(alice, bob).get("id").asLong();
+    setReady(alice, roomId, true).andExpect(status().isOk());
+    UUID matchId =
+        UUID.fromString(
+            bodyOf(setReady(bob, roomId, true).andExpect(status().isOk())).get("matchId").asText());
+
+    createRoom(alice).andExpect(status().isConflict());
+
+    playTicTacToeToAWin(matchId, alice, bob);
+
+    JsonNode next = bodyOf(createRoom(alice).andExpect(status().isCreated()));
+    postJson("/api/rooms/join", bob.token(), "{\"code\":\"" + next.get("code").asText() + "\"}")
+        .andExpect(status().isOk());
+    assertThat(statusOf(roomId)).isEqualTo("CLOSED");
+  }
+
+  private void playTicTacToeToAWin(UUID matchId, Player first, Player second) {
+    matchService.connectPlayer(matchId, String.valueOf(first.id()));
+    List<String> players =
+        matchService.connectPlayer(matchId, String.valueOf(second.id())).players();
+    String x = players.get(0);
+    String o = players.get(1);
+    int[][] moves = {{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}};
+    for (int i = 0; i < moves.length; i++) {
+      matchService.submitMove(
+          matchId, i % 2 == 0 ? x : o, new TicTacToeMove(moves[i][0], moves[i][1]));
+    }
   }
 
   private JsonNode createAndJoin(Player creator, Player joiner) throws Exception {
