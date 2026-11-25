@@ -22,6 +22,18 @@ public class RoomException extends ErrorResponseException {
     return new RoomException(HttpStatus.NOT_FOUND, "You are not in that room");
   }
 
+  static RoomException notAMember() {
+    return new RoomException(HttpStatus.FORBIDDEN, "You are not in that room");
+  }
+
+  static RoomException notCreator() {
+    return new RoomException(HttpStatus.FORBIDDEN, "Only the room creator can close the room");
+  }
+
+  static RoomException waitingForOpponent() {
+    return new RoomException(HttpStatus.CONFLICT, "Wait for another player before readying up");
+  }
+
   static RoomException full() {
     return new RoomException(HttpStatus.CONFLICT, "Room is full");
   }

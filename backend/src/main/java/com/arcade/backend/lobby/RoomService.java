@@ -1,16 +1,23 @@
 package com.arcade.backend.lobby;
 
 import com.arcade.backend.auth.AccountNotFoundException;
+import com.arcade.backend.auth.User;
 import com.arcade.backend.auth.UserRepository;
 import com.arcade.backend.match.MatchService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
@@ -23,6 +30,7 @@ public class RoomService {
   private final UserRepository users;
   private final RoomCodeGenerator codeGenerator;
   private final MatchService matchService;
+  private final RoomEventPublisher roomEvents;
   private final Clock clock;
   private final TransactionTemplate transaction;
 
@@ -32,6 +40,7 @@ public class RoomService {
       UserRepository users,
       RoomCodeGenerator codeGenerator,
       MatchService matchService,
+      RoomEventPublisher roomEvents,
       Clock clock,
       PlatformTransactionManager transactionManager) {
     this.rooms = rooms;
@@ -39,6 +48,7 @@ public class RoomService {
     this.users = users;
     this.codeGenerator = codeGenerator;
     this.matchService = matchService;
+    this.roomEvents = roomEvents;
     this.clock = clock;
     this.transaction = new TransactionTemplate(transactionManager);
   }
@@ -91,13 +101,66 @@ public class RoomService {
     }
     if (members.countByRoomId(room.getId()) >= room.getCapacity()) {
       room.setStatus(RoomStatus.FULL);
-      List<String> playerIds =
-          members.findAllByRoomIdOrderByJoinedAtAscIdAsc(room.getId()).stream()
-              .map(m -> String.valueOf(m.getUserId()))
-              .toList();
-      matchService.createFromFullRoom(room.getId(), room.getGameType(), playerIds);
     }
+    publishRoomUpdatedAfterCommit(room);
     return summary(room.getId());
+  }
+
+  @Transactional(readOnly = true)
+  public RoomDetail get(long userId, long roomId) {
+    Room room =
+        rooms
+            .findById(roomId)
+            .filter(r -> r.getStatus() != RoomStatus.CLOSED)
+            .orElseThrow(RoomException::roomNotFound);
+    if (!members.existsByRoomIdAndUserId(roomId, userId)) {
+      throw RoomException.notAMember();
+    }
+    return detail(room);
+  }
+
+  /**
+   * The room row is locked first, so two players pressing Ready at the same moment are handled one
+   * after the other: the second sees the first's ready flag, and exactly one of them starts the
+   * match. Starting means creating the match and marking the room STARTED in the same transaction.
+   */
+  @Transactional
+  public RoomDetail setReady(long userId, long roomId, boolean ready) {
+    Room room = rooms.findActiveByIdForUpdate(roomId).orElseThrow(RoomException::roomNotFound);
+    RoomMember member =
+        members.findByRoomIdAndUserId(roomId, userId).orElseThrow(RoomException::notInRoom);
+    if (room.getStatus() == RoomStatus.STARTED) {
+      throw RoomException.started();
+    }
+    if (ready && room.getStatus() != RoomStatus.FULL) {
+      throw RoomException.waitingForOpponent();
+    }
+    member.setReady(ready);
+    List<RoomMember> seated = members.findAllByRoomIdOrderByJoinedAtAscIdAsc(roomId);
+    if (seated.size() == room.getCapacity() && seated.stream().allMatch(RoomMember::isReady)) {
+      startMatch(room, seated);
+    } else {
+      publishRoomUpdatedAfterCommit(room);
+    }
+    return detail(room);
+  }
+
+  /**
+   * Closing empties the room, like the last player leaving, so every player is free to join or
+   * create another room.
+   */
+  @Transactional
+  public void close(long userId, long roomId) {
+    Room room = rooms.findActiveByIdForUpdate(roomId).orElseThrow(RoomException::roomNotFound);
+    if (!room.getCreatorId().equals(userId) || !members.existsByRoomIdAndUserId(roomId, userId)) {
+      throw RoomException.notCreator();
+    }
+    if (room.getStatus() == RoomStatus.STARTED) {
+      throw RoomException.started();
+    }
+    members.deleteAll(members.findAllByRoomIdOrderByJoinedAtAscIdAsc(roomId));
+    room.setStatus(RoomStatus.CLOSED);
+    afterCommit(() -> roomEvents.publishRoomClosed(roomId));
   }
 
   /**
@@ -112,15 +175,59 @@ public class RoomService {
     if (room.getStatus() == RoomStatus.STARTED) {
       throw RoomException.started();
     }
-    if (room.getStatus() == RoomStatus.FULL) {
-      matchService.abandonWaitingMatch(roomId);
-    }
     members.delete(member);
     if (members.countByRoomId(roomId) == 0) {
       room.setStatus(RoomStatus.CLOSED);
-    } else {
-      room.setStatus(RoomStatus.OPEN);
+      return;
     }
+    // Whoever stays has to confirm again once someone new sits down.
+    members.findAllByRoomIdOrderByJoinedAtAscIdAsc(roomId).forEach(m -> m.setReady(false));
+    room.setStatus(RoomStatus.OPEN);
+    publishRoomUpdatedAfterCommit(room);
+  }
+
+  private void startMatch(Room room, List<RoomMember> seated) {
+    List<String> playerIds = seated.stream().map(m -> String.valueOf(m.getUserId())).toList();
+    UUID matchId =
+        matchService.createFromFullRoom(room.getId(), room.getGameType(), playerIds).getId();
+    room.setStatus(RoomStatus.STARTED);
+    afterCommit(() -> roomEvents.publishMatchStarted(room.getId(), matchId));
+  }
+
+  private void publishRoomUpdatedAfterCommit(Room room) {
+    afterCommit(() -> roomEvents.publishRoomUpdated(detail(room)));
+  }
+
+  /** A rolled-back change must never reach the players, so events wait for the commit. */
+  private static void afterCommit(Runnable action) {
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            action.run();
+          }
+        });
+  }
+
+  private RoomDetail detail(Room room) {
+    List<RoomMember> seated = members.findAllByRoomIdOrderByJoinedAtAscIdAsc(room.getId());
+    Map<Long, User> byId =
+        users.findAllById(seated.stream().map(RoomMember::getUserId).toList()).stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+    List<RoomSeat> seats = seated.stream().map(m -> seat(m, byId.get(m.getUserId()))).toList();
+    return new RoomDetail(
+        room.getId(),
+        room.getCode(),
+        room.getGameType(),
+        room.getStatus(),
+        room.getCreatorId(),
+        room.getCapacity(),
+        seats);
+  }
+
+  private static RoomSeat seat(RoomMember member, User user) {
+    return new RoomSeat(
+        member.getUserId(), user.getDisplayName(), user.getAvatarColour(), member.isReady());
   }
 
   private RoomResponse createOnce(long userId, GameType gameType) {
