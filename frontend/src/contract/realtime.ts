@@ -1,28 +1,34 @@
 import type { ErrorMessage } from './error';
-import type { GameType } from './rest';
+import type { GameType, RoomDetail } from './rest';
 
 export type MatchStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'ABANDONED';
 export type MatchOutcome = 'WIN' | 'DRAW' | 'ABANDONED';
-export type RoomEventType =
-  'PLAYER_JOINED' | 'PLAYER_LEFT' | 'ROOM_UPDATED' | 'MATCH_STARTED';
 
 export interface EchoRequest {
-  message: string;
+  content: string;
 }
 
 export interface EchoResponse {
-  message: string;
   sender: string;
-  timestamp: string;
+  content: string;
 }
 
-export interface RoomEvent {
-  type: RoomEventType;
-  roomCode: string;
-  gameType: GameType;
-  players: string[];
-  matchId: string | null;
+export interface RoomUpdatedEvent {
+  type: 'ROOM_UPDATED';
+  room: RoomDetail;
 }
+
+export interface MatchStartedEvent {
+  type: 'MATCH_STARTED';
+  matchId: string;
+}
+
+export interface RoomClosedEvent {
+  type: 'ROOM_CLOSED';
+}
+
+/** Everything sent on `/topic/rooms/{id}`, told apart by `type`. */
+export type RoomEvent = RoomUpdatedEvent | MatchStartedEvent | RoomClosedEvent;
 
 export interface TicTacToeMove {
   row: number;

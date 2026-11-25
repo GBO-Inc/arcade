@@ -10,9 +10,12 @@ import type {
   MatchFinalResult,
   MatchMoveEvent,
   MatchMoveRequest,
+  MatchStartedEvent,
   MatchStateResponse,
-  RoomEvent,
+  RoomClosedEvent,
+  RoomDetail,
   RoomListChangedEvent,
+  RoomUpdatedEvent,
 } from './index';
 
 type Validator = (value: unknown) => boolean;
@@ -48,23 +51,38 @@ const isMatchState = (v: unknown): v is MatchStateResponse =>
   'state' in v &&
   isNumber(v.moveCount);
 
+const isRoomDetail = (v: unknown): v is RoomDetail =>
+  isRecord(v) &&
+  isNumber(v.id) &&
+  isString(v.code) &&
+  isString(v.gameType) &&
+  isString(v.status) &&
+  isNumber(v.creatorId) &&
+  isNumber(v.capacity) &&
+  isNullableString(v.matchId) &&
+  Array.isArray(v.seats) &&
+  v.seats.every(
+    (seat) =>
+      isRecord(seat) &&
+      isNumber(seat.userId) &&
+      isString(seat.displayName) &&
+      isNullableString(seat.avatarColour) &&
+      typeof seat.ready === 'boolean',
+  );
+
 const isMove = (v: unknown): v is MatchMoveRequest =>
   isRecord(v) && ((isNumber(v.row) && isNumber(v.col)) || isString(v.playerId));
 
 const VALIDATORS: Record<string, Validator> = {
-  EchoRequest: (v): v is EchoRequest => isRecord(v) && isString(v.message),
+  EchoRequest: (v): v is EchoRequest => isRecord(v) && isString(v.content),
   EchoResponse: (v): v is EchoResponse =>
-    isRecord(v) &&
-    isString(v.message) &&
-    isString(v.sender) &&
-    isString(v.timestamp),
-  RoomEvent: (v): v is RoomEvent =>
-    isRecord(v) &&
-    isString(v.type) &&
-    isString(v.roomCode) &&
-    isString(v.gameType) &&
-    isStringArray(v.players) &&
-    isNullableString(v.matchId),
+    isRecord(v) && isString(v.sender) && isString(v.content),
+  RoomUpdatedEvent: (v): v is RoomUpdatedEvent =>
+    isRecord(v) && v.type === 'ROOM_UPDATED' && isRoomDetail(v.room),
+  MatchStartedEvent: (v): v is MatchStartedEvent =>
+    isRecord(v) && v.type === 'MATCH_STARTED' && isString(v.matchId),
+  RoomClosedEvent: (v): v is RoomClosedEvent =>
+    isRecord(v) && v.type === 'ROOM_CLOSED',
   MatchStateResponse: isMatchState,
   MatchMoveRequest: isMove,
   MatchMoveEvent: (v): v is MatchMoveEvent =>

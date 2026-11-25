@@ -22,62 +22,123 @@
 ### Message Summary
 | Message | Destination | Direction | Payload Type |
 | --- | --- | --- | --- |
-| Echo request | `/app/echo` | Client -> Server | `EchoRequest` |
-| Echo response | `/user/queue/echo` | Server -> Client | `EchoResponse` |
-| Room event | `/topic/rooms/{code}` | Server -> Client | `RoomEvent` |
+| Echo request | `/app/echo`, `/app/echo/private` | Client -> Server | `EchoRequest` |
+| Echo response | `/topic/echo`, `/user/queue/echo` | Server -> Client | `EchoResponse` |
+| Room event | `/topic/rooms/{id}` | Server -> Client | `RoomEvent` (`ROOM_UPDATED`, `MATCH_STARTED`, `ROOM_CLOSED`) |
 | Match state | `/topic/matches/{matchId}` | Server -> Client | `MatchStateResponse` |
 | Submit move | `/app/match/{id}/move` | Client -> Server | `MatchMoveRequest` |
 | Move applied broadcast | `/topic/matches/{matchId}` | Server -> Client | `MatchMoveEvent` |
 | Match final result | `/topic/matches/{matchId}`, `/user/queue/match-result` | Server -> Client | `MatchFinalResult` |
 | Error | `/user/queue/errors` | Server -> Client | `ErrorMessage` |
-| Send chat | `/app/match/{id}/chat` | Client -> Server | `ChatSendRequest` |
-| Chat broadcast | `/topic/matches/{matchId}/chat` | Server -> Client | `ChatMessage` |
-| Clock update | `/topic/matches/{matchId}/clock` | Server -> Client | `ClockUpdate` |
+| Send chat (planned, SCRUM-46) | `/app/match/{id}/chat` | Client -> Server | `ChatSendRequest` |
+| Chat broadcast (planned, SCRUM-46) | `/topic/matches/{matchId}/chat` | Server -> Client | `ChatMessage` |
+| Clock update (planned, SCRUM-56) | `/topic/matches/{matchId}/clock` | Server -> Client | `ClockUpdate` |
 | Room list invalidation | `/topic/rooms` | Server -> Client | `RoomListChangedEvent` |
 ---
 
 ## 2. Echo
 
+A connection check. `/app/echo` answers every subscriber of `/topic/echo`; `/app/echo/private`
+answers only the sender on `/user/queue/echo`.
+
 ### 2.1 Echo Request (Client -> Server)
-- **Destination:** `/app/echo`
+- **Destination:** `/app/echo` or `/app/echo/private`
 - **Payload (`EchoRequest`):**
 
 <!-- type: EchoRequest -->
 ```json
 {
-  "message": "ping"
+  "content": "ping"
 }
 ```
 
 ### 2.2 Echo Response (Server -> Client)
-- **Destination:** `/user/queue/echo`
-- **Payload (`EchoResponse`):**
+- **Destination:** `/topic/echo` or `/user/queue/echo`
+- **Payload (`EchoResponse`):** `sender` is the authenticated user id.
 
 <!-- type: EchoResponse -->
 ```json
 {
-  "message": "ping",
-  "sender": "player-1",
-  "timestamp": "2026-11-25T14:00:00Z"
+  "sender": "7",
+  "content": "ping"
 }
 ```
 
 ---
 
-## 3. Room Events
+## 3. Waiting Room
 
-### 3.1 Room Event Broadcast (Server -> Room Subscribers)
-- **Destination:** `/topic/rooms/{code}`
-- **Payload (`RoomEvent`):**
+Players in a room wait for each other here. A match is created only when the room is full and
+every player is ready; joining a room does not create one.
 
-<!-- type: RoomEvent -->
+### 3.1 REST
+
+All requests need `Authorization: Bearer <jwt>`. Errors use the `ErrorResponse` body.
+
+| Request | Response | Notes |
+| --- | --- | --- |
+| `GET /api/rooms/{id}` | `200` `RoomDetail` | Members only. The waiting room loads this first and again after a reconnect. |
+| `POST /api/rooms/{id}/ready` with `{"ready": true \| false}` | `200` `RoomDetail` | Members only. `ready: true` needs a full room. |
+| `POST /api/rooms/{id}/close` | `204` | Creator only. Empties and closes the room. |
+
+`RoomDetail.seats` lists the players in join order; an empty seat is simply absent
+(`capacity - seats.length`). `matchId` is `null` until the room has started (`status` `STARTED`),
+then holds the match UUID, so a client that missed `MATCH_STARTED` still finds its match.
+
+| Status | Trigger |
+| --- | --- |
+| `400` | `ready` is missing. |
+| `403` | `GET`: the user is not in the room. `close`: the user is not the creator. |
+| `404` | The room does not exist or is closed. `ready`: the user is not in the room. |
+| `409` | `ready: true` while the room is not full, or the room has already started. |
+
+`POST /api/rooms/{id}/leave` also sets every remaining player back to not ready.
+
+### 3.2 Room Events (Server -> Room Members)
+- **Destination:** `/topic/rooms/{id}`. Published only after the change is committed.
+- **Payload (`RoomEvent`):** one of the three shapes below, told apart by `type`. Events can arrive
+  slightly out of order across rapid changes; clients treat `ROOM_UPDATED` as a snapshot and may
+  refetch `GET /api/rooms/{id}` to be sure.
+
+`ROOM_UPDATED`: someone joined, left or changed their ready state. `room` is a `RoomDetail`.
+
+<!-- type: RoomUpdatedEvent -->
 ```json
 {
-  "type": "PLAYER_JOINED",
-  "roomCode": "ABC123",
-  "gameType": "TIC_TAC_TOE",
-  "players": ["player-1", "player-2"],
-  "matchId": null
+  "type": "ROOM_UPDATED",
+  "room": {
+    "id": 42,
+    "code": "ABC234",
+    "gameType": "TIC_TAC_TOE",
+    "status": "FULL",
+    "creatorId": 7,
+    "capacity": 2,
+    "matchId": null,
+    "seats": [
+      { "userId": 7, "displayName": "Alice", "avatarColour": "#EF4444", "ready": true },
+      { "userId": 9, "displayName": "Bob", "avatarColour": null, "ready": false }
+    ]
+  }
+}
+```
+
+`MATCH_STARTED`: the room was full and the last player became ready. Sent once; players then
+open `/match/{matchId}`.
+
+<!-- type: MatchStartedEvent -->
+```json
+{
+  "type": "MATCH_STARTED",
+  "matchId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+`ROOM_CLOSED`: the creator closed the room.
+
+<!-- type: RoomClosedEvent -->
+```json
+{
+  "type": "ROOM_CLOSED"
 }
 ```
 
@@ -270,6 +331,8 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 
 ## 7. Chat
 
+> **Planned (SCRUM-46).** Not implemented yet; this is the agreed shape.
+
 ### 7.1 Send Chat Message (Client -> Server)
 - **Destination:** `/app/match/{id}/chat`
 - **Payload (`ChatSendRequest`):**
@@ -299,6 +362,8 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 
 ## 8. Clock
 
+> **Planned (SCRUM-56).** Not implemented yet; this is the agreed shape.
+
 ### 8.1 Clock Update (Server -> Both Players)
 - **Destination:** `/topic/matches/{matchId}/clock`
 - **Payload (`ClockUpdate`):**
@@ -315,3 +380,19 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
   "serverTime": "2026-11-25T14:01:05Z"
 }
 ```
+
+---
+
+## 9. REST: Load a Match
+
+Used by the match page to load a match before it joins the topic, and to tell "unknown match" from "not your match".
+
+- **Request:** `GET /api/matches/{id}` with `Authorization: Bearer <jwt>`. `id` is the match UUID.
+- **Response `200`:** `MatchStateResponse`, the same shape as in section 4.1.
+- **Errors** (`ErrorResponse` body, `message` carries the text):
+
+| Status | Trigger |
+| --- | --- |
+| `401` | Missing or invalid token. |
+| `403` | The authenticated user is not one of the two players. |
+| `404` | No live match with this ID. Finished matches leave memory, so their result is only delivered on the topic. |

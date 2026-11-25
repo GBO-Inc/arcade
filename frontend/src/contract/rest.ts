@@ -26,3 +26,24 @@ export interface ProfileUpdate {
   displayName: string;
   avatarColour: string;
 }
+
+export type RoomStatus = 'OPEN' | 'FULL' | 'STARTED' | 'CLOSED';
+
+export interface RoomSeat {
+  userId: number;
+  displayName: string;
+  avatarColour: string | null;
+  ready: boolean;
+}
+
+/** `GET /api/rooms/{id}` and the `room` of a `ROOM_UPDATED` event. */
+export interface RoomDetail {
+  id: number;
+  code: string;
+  gameType: GameType;
+  status: RoomStatus;
+  creatorId: number;
+  capacity: number;
+  matchId: string | null;
+  seats: RoomSeat[];
+}
