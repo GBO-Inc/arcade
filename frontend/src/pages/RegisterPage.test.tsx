@@ -51,6 +51,9 @@ describe('RegisterPage', () => {
       if (url.endsWith('/api/auth/login')) {
         return Promise.resolve(jsonResponse({ accessToken: 'new-token' }));
       }
+      if (url.endsWith('/api/rooms')) {
+        return Promise.resolve(jsonResponse([]));
+      }
       return Promise.resolve(jsonResponse({ id: 7, username: 'alice' }));
     });
     vi.stubGlobal('fetch', fetchMock);

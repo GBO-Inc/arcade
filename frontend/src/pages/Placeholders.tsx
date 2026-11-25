@@ -1,11 +1,3 @@
-export function LobbyPage() {
-  return (
-    <div>
-      <h1 className="text-xl font-bold">Lobby</h1>
-    </div>
-  );
-}
-
 export function LeaderboardPage() {
   return (
     <div>

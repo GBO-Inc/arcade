@@ -42,7 +42,9 @@ describe('LoginPage', () => {
           Promise.resolve(
             String(input).endsWith('/api/auth/login')
               ? jsonResponse({ accessToken: 'new-token' })
-              : jsonResponse({ id: 7, username: 'alice' }),
+              : String(input).endsWith('/api/rooms')
+                ? jsonResponse([])
+                : jsonResponse({ id: 7, username: 'alice' }),
           ),
         ),
     );
@@ -124,7 +126,9 @@ describe('LoginPage', () => {
         ? new Promise<Response>((resolve) => {
             finishLogin = resolve;
           })
-        : Promise.resolve(jsonResponse({ id: 7 })),
+        : Promise.resolve(
+            jsonResponse(String(input).endsWith('/api/rooms') ? [] : { id: 7 }),
+          ),
     );
     vi.stubGlobal('fetch', fetchMock);
     renderAt('/login');

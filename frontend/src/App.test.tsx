@@ -31,20 +31,19 @@ describe('App routing', () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockImplementation((input: RequestInfo | URL) =>
-          Promise.resolve(
-            new Response(
-              JSON.stringify(
-                String(input).endsWith('/api/matches/room-42')
-                  ? IN_PROGRESS_MATCH
-                  : { id: 1 },
-              ),
-              { headers: { 'Content-Type': 'application/json' } },
-            ),
-          ),
-        ),
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input);
+        const body = url.endsWith('/api/matches/room-42')
+          ? IN_PROGRESS_MATCH
+          : url.endsWith('/api/rooms')
+            ? []
+            : { id: 1 };
+        return Promise.resolve(
+          new Response(JSON.stringify(body), {
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }),
     );
   });
 

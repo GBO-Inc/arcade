@@ -74,11 +74,16 @@ function renderMatch() {
   );
 }
 
-/** Opens the page for a loaded match and connects the socket, as the server would. */
+/**
+ * Opens the page for a loaded match and connects the socket, as the server would. Waits for both
+ * player profiles, which load separately, so name assertions do not race them.
+ */
 async function openMatch(match: MatchState = MATCH) {
   mockApi(jsonResponse(match));
   renderMatch();
   await screen.findByTestId('turn-indicator');
+  await screen.findByText('Alice');
+  await screen.findByText('Bob');
   act(() => FakeStompClient.latest.connect());
 }
 
