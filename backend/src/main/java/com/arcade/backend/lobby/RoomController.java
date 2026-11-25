@@ -18,16 +18,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class RoomController {
 
   private final RoomService roomService;
+  private final RoomEventPublisher roomEventPublisher;
 
-  public RoomController(RoomService roomService) {
+  public RoomController(RoomService roomService, RoomEventPublisher roomEventPublisher) {
     this.roomService = roomService;
+    this.roomEventPublisher = roomEventPublisher;
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public RoomResponse create(
       @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CreateRoomRequest request) {
-    return roomService.create(userId(jwt), request.gameType());
+    RoomResponse room = roomService.create(userId(jwt), request.gameType());
+    roomEventPublisher.publishRoomListChanged();
+    return room;
   }
 
   @GetMapping
@@ -38,13 +42,16 @@ public class RoomController {
   @PostMapping("/join")
   public RoomResponse join(
       @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody JoinRoomRequest request) {
-    return roomService.join(userId(jwt), request.code());
+    RoomResponse room = roomService.join(userId(jwt), request.code());
+    roomEventPublisher.publishRoomListChanged();
+    return room;
   }
 
   @PostMapping("/{id}/leave")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void leave(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
     roomService.leave(userId(jwt), id);
+    roomEventPublisher.publishRoomListChanged();
   }
 
   private static long userId(Jwt jwt) {

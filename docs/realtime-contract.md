@@ -113,9 +113,26 @@
 | `winnerId` | `string \| null` | Winner's player ID when `outcome` is `WIN`; otherwise `null`. |
 | `reason` | `string` | Human-readable reason for match termination. |
 
+## 3. Lobby Room List Invalidation
+
+When a room is created, joined, or left successfully, the server broadcasts an invalidation
+event. Clients should refetch `GET /api/rooms` to obtain the authoritative list of open rooms.
+
+- **Destination:** `/topic/rooms`
+- **Payload (`RoomListChangedEvent`):**
+
+```json
+{
+  "type": "ROOM_LIST_CHANGED"
+}
+```
+
+The event is broadcast after the corresponding room operation succeeds. It contains no room
+snapshot; clients use the REST list endpoint for current room data.
+
 ---
 
-## 3. Error Handling (Server -> Sender Only)
+## 4. Error Handling (Server -> Sender Only)
 
 When a move is rejected, **the match state remains unchanged**, no broadcast is sent to `/topic/matches/{matchId}`, and a private error message is sent **only to the sender**.
 
