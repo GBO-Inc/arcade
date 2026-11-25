@@ -4,15 +4,11 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { UiKitDemo } from './components/ui/UiKitDemo';
 import { AuthProvider } from './hooks/AuthContext';
 import { SocketProvider } from './hooks/SocketContext';
-import {
-  LoginPage,
-  RegisterPage,
-  MatchPage,
-  LeaderboardPage,
-  HistoryPage,
-} from './pages/Placeholders';
+import { MatchPage, LeaderboardPage, HistoryPage } from './pages/Placeholders';
+import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { LobbyPage } from './pages/LobbyPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 export function AppRoutes() {
   return (

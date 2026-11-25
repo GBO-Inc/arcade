@@ -13,7 +13,7 @@ flowchart LR
   Engines["Game engines<br/>pure move validation"]
   Database[("PostgreSQL 17<br/>Flyway migrations")]
 
-  Frontend -->|VITE_API_BASE_URL or relative /api| Rest
+  Frontend -->|/api via Vite dev proxy| Rest
   Frontend <-->|STOMP destinations| WebSocket
   Rest --> Match
   Rest --> Database
