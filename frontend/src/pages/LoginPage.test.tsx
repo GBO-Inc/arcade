@@ -42,7 +42,9 @@ describe('LoginPage', () => {
           Promise.resolve(
             String(input).endsWith('/api/auth/login')
               ? jsonResponse({ accessToken: 'new-token' })
-              : jsonResponse({ id: 7, username: 'alice' }),
+              : String(input).endsWith('/api/rooms')
+                ? jsonResponse([])
+                : jsonResponse({ id: 7, username: 'alice' }),
           ),
         ),
     );

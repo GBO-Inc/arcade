@@ -20,11 +20,16 @@ describe('App routing', () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() =>
+      vi.fn().mockImplementation((input: RequestInfo | URL) =>
         Promise.resolve(
-          new Response(JSON.stringify({ id: 1 }), {
-            headers: { 'Content-Type': 'application/json' },
-          }),
+          new Response(
+            JSON.stringify(
+              String(input).endsWith('/api/rooms') ? [] : { id: 1 },
+            ),
+            {
+              headers: { 'Content-Type': 'application/json' },
+            },
+          ),
         ),
       ),
     );

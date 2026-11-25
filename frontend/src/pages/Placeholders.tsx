@@ -1,13 +1,5 @@
 import { useParams } from 'react-router-dom';
 
-export function LobbyPage() {
-  return (
-    <div>
-      <h1 className="text-xl font-bold">Lobby</h1>
-    </div>
-  );
-}
-
 export function MatchPage() {
   const { id } = useParams();
   return (

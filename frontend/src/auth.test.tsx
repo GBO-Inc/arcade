@@ -224,8 +224,14 @@ describe('authentication', () => {
     localStorage.setItem(ACCESS_TOKEN_KEY, 'valid-token');
     const fetchMock = vi
       .fn()
-      .mockImplementation(() =>
-        Promise.resolve(jsonResponse({ id: 7, username: 'player1' })),
+      .mockImplementation((input: RequestInfo | URL) =>
+        Promise.resolve(
+          jsonResponse(
+            String(input).endsWith('/api/rooms')
+              ? []
+              : { id: 7, username: 'player1' },
+          ),
+        ),
       );
     vi.stubGlobal('fetch', fetchMock);
 
@@ -246,6 +252,10 @@ describe('authentication', () => {
       await screen.findByRole('heading', { name: 'History' }),
     ).toBeVisible();
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith('/api/me'),
+      ),
+    ).toHaveLength(1);
   });
 });
