@@ -54,13 +54,13 @@ SCRUM-25 Document project setup and architecture
 
 - The server is the only authority on game state. Clients send moves, the server validates and broadcasts the result.
 - Every game implements the same engine interface. Engines are pure: no database, clock or network access. Time and randomness are passed in.
-- The REST and WebSocket message shapes are a shared contract. A message change updates the contract documentation, both sides and the tests in the same pull request and needs approval from all three members.
+- The REST and WebSocket message shapes are a shared contract (`docs/realtime-contract.md` and the frontend `contract` folder). A message change updates the document, both sides and the tests in the same pull request and needs approval from all three members.
 - Database changes only through Flyway migrations. Never edit a migration that is already on `main`; add a new migration.
 - Secrets come from environment variables. Nothing secret is committed or written to logs, tickets or chat.
 
 ## Code style
 
-- TypeScript strict mode. Do not use `any` or unsafe type assertions.
+- TypeScript strict mode, no `any` without a comment explaining why.
 - Small functions, descriptive names, no dead code and no commented-out code.
 - Java uses constructor injection, immutable DTO records and no business logic in controllers.
 
