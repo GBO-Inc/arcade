@@ -30,41 +30,39 @@ flowchart LR
 
 ## One-move data flow
 
-The public match-move STOMP or REST entry point is not implemented yet. `MatchService.submitMove(...)` is the current in-process move path, while `/topic/matches/{matchId}` is the implemented STOMP match subscription used to connect a participant and publish match state. The sequence below describes only those real components.
+Clients send a move to `/app/match/{matchId}/move`. The message shapes and error codes are in [realtime-contract.md](realtime-contract.md).
 
 ```mermaid
 sequenceDiagram
   participant C as Authenticated client
   participant WS as STOMP /ws
-  participant L as MatchWebSocketListener
+  participant W as MatchWebSocketController
   participant M as MatchService
   participant E as Registered game engine
   participant P as MatchEventPublisher
 
-  C->>WS: Subscribe to /topic/matches/{matchId}
-  WS->>L: SessionSubscribeEvent
-  L->>M: connectPlayer(matchId, principal name)
-  M->>M: Verify participant and lock match
-  M-->>L: MatchStateResponse
-  L-->>C: State sent to /topic/matches/{matchId}
-
-  Note over M,E: Move submission is an in-process MatchService call;<br/>no public move endpoint is implemented yet.
+  C->>WS: SEND /app/match/{matchId}/move
+  WS->>W: handleMove(matchId, payload, principal)
+  W->>M: getMatchGameType(matchId)
+  W->>W: Deserialize move for the game type
+  W->>M: submitMove(matchId, player, move)
   M->>M: Lock match
   M->>M: Verify participant, status and turn
   M->>E: applyMove(current state, move)
   E-->>M: MoveResult
   alt Move rejected
-    M-->>M: Return invalid-move error
+    M-->>W: MatchException with code
+    W-->>C: MatchErrorMessage to /user/queue/errors (sender only)
   else Move accepted
     M->>M: Record move and calculate outcome
-    alt Match not finished
-      M-->>M: Save and return MatchStateResponse
-    else Match finished
+    M->>P: publishMoveApplied(MatchMoveEvent)
+    P-->>C: New state and move to /topic/matches/{matchId}
+    opt Match finished
       M->>M: Finish match and claim result publication
       M->>P: publishMatchEnded(MatchFinalResult)
-      P-->>C: Send final result by private queue and match topic
+      P-->>C: Final result by private queue and match topic
     end
   end
 ```
 
-The server is authoritative. A move is accepted only for an existing participant in an in-progress match whose turn it is. The engine receives the locked match state, rejects illegal moves and returns the next state. Terminal outcomes are published once and the active match is removed from memory.
+The server is authoritative. A move is accepted only for an existing participant in an in-progress match whose turn it is. The engine receives the locked match state, rejects illegal moves and returns the next state. A rejected move leaves the state unchanged. Terminal outcomes are published once and the active match is removed from memory.

@@ -13,6 +13,11 @@ public class StompMatchEventPublisher implements MatchEventPublisher {
   }
 
   @Override
+  public void publishMoveApplied(MatchMoveEvent event) {
+    messagingTemplate.convertAndSend("/topic/matches/" + event.match().matchId(), event);
+  }
+
+  @Override
   public void publishMatchEnded(MatchFinalResult result) {
     for (String playerId : result.players()) {
       messagingTemplate.convertAndSendToUser(playerId, "/queue/match-result", result);
