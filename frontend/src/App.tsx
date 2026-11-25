@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { UiKitDemo } from './components/ui/UiKitDemo';
 import { AuthProvider } from './hooks/AuthContext';
+import { SocketProvider } from './hooks/SocketContext';
 import {
   LoginPage,
   RegisterPage,
@@ -16,7 +17,14 @@ import { ProfilePage } from './pages/ProfilePage';
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<AppLayout />}>
+      <Route
+        path="/"
+        element={
+          <SocketProvider>
+            <AppLayout />
+          </SocketProvider>
+        }
+      >
         <Route index element={<Navigate to="/lobby" replace />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
