@@ -1,6 +1,7 @@
 package com.arcade.backend.match;
 
 import com.arcade.backend.engine.dummy.DummyMove;
+import com.arcade.backend.engine.tictactoe.TicTacToeMove;
 import com.arcade.backend.lobby.GameType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -55,8 +56,8 @@ public class MatchWebSocketController {
     }
     try {
       return switch (gameType) {
-        case TIC_TAC_TOE -> objectMapper.treeToValue(payload, DummyMove.class);
-        default -> throw MatchException.invalidMove("Unsupported game type: " + gameType);
+        case TIC_TAC_TOE -> objectMapper.treeToValue(payload, TicTacToeMove.class);
+        case CONNECT_FOUR, CHECKERS -> objectMapper.treeToValue(payload, DummyMove.class);
       };
     } catch (JsonProcessingException | IllegalArgumentException ex) {
       throw MatchException.invalidMove("Malformed move payload");
