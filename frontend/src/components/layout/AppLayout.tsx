@@ -1,7 +1,17 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/auth';
+import { Button } from '../ui';
 import { ConnectionStatus } from './ConnectionStatus';
 
 export function AppLayout() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
+  }
+
   const linkStyle = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-1.5 rounded text-sm font-medium ${
       isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
@@ -39,6 +49,11 @@ export function AppLayout() {
             <NavLink to="/register" className={linkStyle}>
               Register
             </NavLink>
+            {user && (
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                Log out
+              </Button>
+            )}
           </div>
         </div>
       </header>
