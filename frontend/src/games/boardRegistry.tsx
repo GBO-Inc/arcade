@@ -6,6 +6,8 @@ export interface BoardProps {
   myPlayerId: string;
   /** Sends the game-specific move to the server; the board never changes its own state. */
   onMove: (move: unknown) => void;
+  /** The move the server confirmed last, in the game's own move shape, for highlighting. */
+  lastMove?: unknown;
 }
 
 // SCRUM-47 replaces this with the real registry.

@@ -28,7 +28,8 @@ function MatchView({
   matchId: string;
   myPlayerId: string;
 }) {
-  const { load, result, serverError, clearServerError } = useMatch(matchId);
+  const { load, result, lastMove, serverError, clearServerError } =
+    useMatch(matchId);
   const navigate = useNavigate();
   const players = load.phase === 'ready' ? load.match.players : [];
   const profiles = usePlayerProfiles(players);
@@ -67,7 +68,7 @@ function MatchView({
         myPlayerId={myPlayerId}
         opponentName={playerName(opponentId, profiles[opponentId])}
       />
-      <Board match={match} myPlayerId={myPlayerId} />
+      <Board match={match} myPlayerId={myPlayerId} lastMove={lastMove} />
       {serverError && (
         <div className="fixed bottom-4 right-4 z-50 max-w-sm">
           <Toast
@@ -92,15 +93,18 @@ function MatchView({
 function Board({
   match,
   myPlayerId,
+  lastMove,
 }: {
   match: MatchState;
   myPlayerId: string;
+  lastMove: unknown;
 }) {
   const { send } = useSocket();
   return (
     <BoardSlot
       match={match}
       myPlayerId={myPlayerId}
+      lastMove={lastMove}
       onMove={(move) => send(`/app/match/${match.matchId}/move`, move)}
     />
   );

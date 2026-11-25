@@ -177,6 +177,31 @@ describe('MatchPage', () => {
       expect(bob).not.toHaveTextContent('you');
     });
 
+    it('passes the last confirmed move to the board', async () => {
+      await openMatch();
+
+      deliver(TOPIC, {
+        match: {
+          ...MATCH,
+          currentTurnPlayerId: '8',
+          moveCount: 1,
+          state: {
+            board: [
+              [null, null, 'X'],
+              [null, null, null],
+              [null, null, null],
+            ],
+          },
+        },
+        move: { row: 0, col: 2 },
+        movedBy: '7',
+      });
+
+      expect(
+        screen.getByRole('button', { name: 'row 1, column 3, X' }),
+      ).toHaveAttribute('data-last-move', 'true');
+    });
+
     it('subscribes to the match topic and renders the board slot', async () => {
       await openMatch();
 

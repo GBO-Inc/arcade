@@ -94,14 +94,12 @@ describe('TicTacToeBoard', () => {
     expect(onMove).not.toHaveBeenCalled();
   });
 
-  it('highlights the last move and winning line', () => {
+  it('highlights the last move it is given', () => {
     const match = createMatch({
-      status: 'FINISHED',
-      currentTurnPlayerId: null,
       state: {
         board: [
-          ['X', 'X', 'X'],
-          ['O', 'O', null],
+          ['X', null, null],
+          [null, 'O', null],
           [null, null, null],
         ],
       },
@@ -112,26 +110,52 @@ describe('TicTacToeBoard', () => {
         match={match}
         myPlayerId="7"
         onMove={vi.fn()}
-        lastMove={{ row: 0, col: 2 }}
-        winningLine={[
-          { row: 0, col: 0 },
-          { row: 0, col: 1 },
-          { row: 0, col: 2 },
-        ]}
+        lastMove={{ row: 1, col: 1 }}
       />,
     );
 
     expect(
-      screen.getByRole('button', { name: 'row 1, column 3, X' }),
+      screen.getByRole('button', { name: 'row 2, column 2, O' }),
     ).toHaveAttribute('data-last-move', 'true');
     expect(
       screen.getByRole('button', { name: 'row 1, column 1, X' }),
-    ).toHaveAttribute('data-winning', 'true');
+    ).toHaveAttribute('data-last-move', 'false');
+  });
+
+  it('finds and highlights the winning line from the board itself', () => {
+    const match = createMatch({
+      status: 'FINISHED',
+      state: {
+        board: [
+          ['O', 'X', null],
+          ['O', 'X', null],
+          [null, 'X', 'O'],
+        ],
+      },
+    });
+
+    render(<TicTacToeBoard match={match} myPlayerId="7" onMove={vi.fn()} />);
+
+    const winning = screen
+      .getAllByRole('button')
+      .filter((cell) => cell.getAttribute('data-winning') === 'true')
+      .map((cell) => cell.getAttribute('aria-label'));
+    expect(winning).toEqual([
+      'row 1, column 2, X',
+      'row 2, column 2, X',
+      'row 3, column 2, X',
+    ]);
+  });
+
+  it('highlights nothing while there is no winner', () => {
+    render(
+      <TicTacToeBoard match={createMatch()} myPlayerId="7" onMove={vi.fn()} />,
+    );
+
     expect(
-      screen.getByRole('button', { name: 'row 1, column 2, X' }),
-    ).toHaveAttribute('data-winning', 'true');
-    expect(
-      screen.getByRole('button', { name: 'row 1, column 3, X' }),
-    ).toHaveAttribute('data-winning', 'true');
+      screen
+        .getAllByRole('button')
+        .some((cell) => cell.getAttribute('data-winning') === 'true'),
+    ).toBe(false);
   });
 });

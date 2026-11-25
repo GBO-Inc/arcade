@@ -1,27 +1,26 @@
-import type { MatchState } from './matchTypes';
+import type { BoardProps } from './boardRegistry';
 
 export interface CellCoord {
   row: number;
   col: number;
 }
 
+type Cell = string | null;
+
 export interface TicTacToeState {
-  board: (string | null)[][];
-  xPlayer?: string;
-  oPlayer?: string;
-  currentPlayer?: string;
-  lastMove?: CellCoord | null;
-  winningLine?: CellCoord[] | null;
+  board: Cell[][];
 }
 
-export interface TicTacToeBoardProps {
-  match: MatchState;
-  myPlayerId: string;
-  onMove: (move: unknown) => void;
+export interface TicTacToeBoardProps extends BoardProps {
   disabled?: boolean;
-  lastMove?: CellCoord | null;
-  winningLine?: CellCoord[] | null;
 }
+
+const LINES: CellCoord[][] = [
+  ...[0, 1, 2].map((row) => [0, 1, 2].map((col) => ({ row, col }))),
+  ...[0, 1, 2].map((col) => [0, 1, 2].map((row) => ({ row, col }))),
+  [0, 1, 2].map((i) => ({ row: i, col: i })),
+  [0, 1, 2].map((i) => ({ row: i, col: 2 - i })),
+];
 
 function isTicTacToeState(value: unknown): value is TicTacToeState {
   if (typeof value !== 'object' || value === null) return false;
@@ -32,21 +31,44 @@ function isTicTacToeState(value: unknown): value is TicTacToeState {
   );
 }
 
-function isSameCell(
-  cell: CellCoord | null | undefined,
-  row: number,
-  col: number,
-): boolean {
-  return Boolean(cell && cell.row === row && cell.col === col);
+function isCellCoord(value: unknown): value is CellCoord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { row?: unknown }).row === 'number' &&
+    typeof (value as { col?: unknown }).col === 'number'
+  );
+}
+
+/** The server does not send the winning line, so it is read from the board. */
+function winningLine(board: Cell[][]): CellCoord[] {
+  return (
+    LINES.find((line) => {
+      const [first, ...rest] = line.map(({ row, col }) => board[row]?.[col]);
+      return first != null && rest.every((mark) => mark === first);
+    }) ?? []
+  );
+}
+
+function cellClasses(canMove: boolean, isLast: boolean, isWinning: boolean) {
+  return [
+    'flex aspect-square items-center justify-center rounded-ui-lg border text-4xl font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-primary-focus',
+    isWinning
+      ? 'border-ui-success-border bg-ui-success-surface text-ui-success-text'
+      : 'border-ui-border bg-ui-surface-raised text-ui-text',
+    canMove ? 'cursor-pointer hover:bg-ui-surface-hover' : 'cursor-not-allowed',
+    isLast && !isWinning ? 'ring-2 ring-ui-primary' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 export function TicTacToeBoard({
   match,
   myPlayerId,
   onMove,
-  disabled = false,
   lastMove,
-  winningLine,
+  disabled = false,
 }: TicTacToeBoardProps) {
   if (!isTicTacToeState(match.state)) {
     return (
@@ -56,55 +78,45 @@ export function TicTacToeBoard({
     );
   }
 
-  const effectiveLastMove =
-    lastMove !== undefined ? lastMove : (match.state.lastMove ?? null);
-  const effectiveWinningLine =
-    winningLine !== undefined ? winningLine : (match.state.winningLine ?? null);
-
-  const isMatchActive = match.status === 'IN_PROGRESS';
+  const { board } = match.state;
+  const last = isCellCoord(lastMove) ? lastMove : null;
+  const line = winningLine(board);
   const isMyTurn =
-    !disabled && isMatchActive && match.currentTurnPlayerId === myPlayerId;
+    !disabled &&
+    match.status === 'IN_PROGRESS' &&
+    match.currentTurnPlayerId === myPlayerId;
 
   return (
-    <div role="grid" aria-label="Tic-tac-toe board">
-      {match.state.board.map((rowCells, rowIndex) => (
-        <div key={rowIndex} role="row">
-          {rowCells.map((cellValue, colIndex) => {
-            const isEmpty = cellValue === null;
+    <div
+      role="grid"
+      aria-label="Tic-tac-toe board"
+      className="mx-auto grid w-full max-w-xs grid-cols-3 gap-ui-2"
+    >
+      {board.map((rowCells, row) => (
+        <div key={row} role="row" className="contents">
+          {rowCells.map((mark, col) => {
+            const isEmpty = mark === null;
             const canMove = isMyTurn && isEmpty;
-            const isLast = isSameCell(effectiveLastMove, rowIndex, colIndex);
-            const isWinning = Boolean(
-              effectiveWinningLine?.some(
-                (coord) => coord.row === rowIndex && coord.col === colIndex,
-              ),
+            const isLast = last?.row === row && last?.col === col;
+            const isWinning = line.some(
+              (cell) => cell.row === row && cell.col === col,
             );
-
-            const statusLabel = isEmpty ? 'empty' : String(cellValue);
-            const ariaLabel = `row ${rowIndex + 1}, column ${colIndex + 1}, ${statusLabel}`;
-
             return (
               <button
-                key={`${rowIndex}-${colIndex}`}
+                key={col}
                 type="button"
-                aria-label={ariaLabel}
+                aria-label={`row ${row + 1}, column ${col + 1}, ${mark ?? 'empty'}`}
                 aria-disabled={!canMove}
                 data-last-move={isLast ? 'true' : 'false'}
                 data-winning={isWinning ? 'true' : 'false'}
-                className={[
-                  'ttt-cell',
-                  !isMyTurn ? 'ttt-cell--disabled' : '',
-                  !isEmpty ? 'ttt-cell--occupied' : '',
-                  isLast ? 'ttt-cell--last-move' : '',
-                  isWinning ? 'ttt-cell--winning' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
+                className={cellClasses(canMove, isLast, isWinning)}
                 onClick={() => {
-                  if (!canMove) return;
-                  onMove({ row: rowIndex, col: colIndex });
+                  if (canMove) {
+                    onMove({ row, col });
+                  }
                 }}
               >
-                {cellValue ?? ''}
+                {mark ?? ''}
               </button>
             );
           })}

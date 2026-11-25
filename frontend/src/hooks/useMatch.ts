@@ -50,6 +50,7 @@ export function useMatch(matchId: string) {
   const { subscribe } = useSocket();
   const [load, setLoad] = useState<MatchLoad>({ phase: 'loading' });
   const [result, setResult] = useState<MatchFinalResult | null>(null);
+  const [lastMove, setLastMove] = useState<unknown>(null);
   const [serverError, setServerError] = useState<ServerError | null>(null);
   const isReady = load.phase === 'ready';
 
@@ -89,6 +90,7 @@ export function useMatch(matchId: string) {
         setResult(body);
       } else if (isMoveEvent(body)) {
         applyState(body.match);
+        setLastMove(body.move);
       } else if (isMatchState(body)) {
         applyState(body);
       }
@@ -110,6 +112,7 @@ export function useMatch(matchId: string) {
   return {
     load,
     result,
+    lastMove,
     serverError,
     clearServerError: () => setServerError(null),
   };
