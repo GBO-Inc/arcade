@@ -128,6 +128,7 @@ class MatchServiceTest {
 
     assertThat(match.getMoves()).containsExactly(move1, move2);
     assertThat(match.getState().scores()).containsEntry("101", 1).containsEntry("202", 1);
+    assertThat(eventPublisher.moves).hasSize(2);
   }
 
   @Test
@@ -192,6 +193,7 @@ class MatchServiceTest {
 
     assertThat(resultStore.findAll()).hasSize(1);
     assertThat(eventPublisher.published).hasSize(1);
+    assertThat(eventPublisher.moves).hasSize(5);
     MatchFinalResult published = eventPublisher.published.get(0);
     assertThat(published.outcome()).isEqualTo(MatchFinalResult.Outcome.WIN);
     assertThat(published.winnerId()).isEqualTo("101");
@@ -200,7 +202,8 @@ class MatchServiceTest {
     assertThat(repository.count()).isZero();
 
     assertThatThrownBy(() -> service.submitMove(match.getId(), "202", new DummyMove("202")))
-        .isInstanceOf(MatchException.class);
+        .isInstanceOf(MatchException.class)
+        .hasMessageContaining("already finished");
   }
 
   @Test
@@ -364,6 +367,12 @@ class MatchServiceTest {
 
   private static final class RecordingEventPublisher implements MatchEventPublisher {
     private final List<MatchFinalResult> published = new CopyOnWriteArrayList<>();
+    private final List<MatchMoveEvent> moves = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void publishMoveApplied(MatchMoveEvent event) {
+      moves.add(event);
+    }
 
     @Override
     public void publishMatchEnded(MatchFinalResult result) {

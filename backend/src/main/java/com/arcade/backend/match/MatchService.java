@@ -143,14 +143,21 @@ public class MatchService implements DisposableBean {
     matches.findActiveByPlayerId(playerId).ifPresent(m -> disconnectPlayer(m.getId(), playerId));
   }
 
+  public GameType getMatchGameType(UUID matchId) {
+    return getLiveMatchOrThrow(matchId).getGameType();
+  }
+
   @SuppressWarnings("unchecked")
   public <TState, TMove> MatchStateResponse submitMove(UUID matchId, String playerId, TMove move) {
-    Match<TState, TMove> match = (Match<TState, TMove>) getMatchOrThrow(matchId);
+    Match<TState, TMove> match = (Match<TState, TMove>) getLiveMatchOrThrow(matchId);
 
     match.getLock().lock();
     try {
       if (!match.getPlayers().contains(playerId)) {
         throw MatchException.notParticipant();
+      }
+      if (match.isTerminal()) {
+        throw MatchException.matchFinished();
       }
       if (match.getStatus() != MatchStatus.IN_PROGRESS) {
         throw MatchException.notInProgress();
@@ -171,12 +178,15 @@ public class MatchService implements DisposableBean {
       if (outcome.status() != MatchResult.Status.ONGOING) {
         match.finish();
         MatchStateResponse finalSnapshot = MatchStateResponse.from(match);
+        eventPublisher.publishMoveApplied(new MatchMoveEvent(finalSnapshot, move, playerId));
         finalizeMatch(match, toFinalResult(match, outcome));
         return finalSnapshot;
       }
 
       matches.save(match);
-      return MatchStateResponse.from(match);
+      MatchStateResponse snapshot = MatchStateResponse.from(match);
+      eventPublisher.publishMoveApplied(new MatchMoveEvent(snapshot, move, playerId));
+      return snapshot;
     } finally {
       match.getLock().unlock();
     }
@@ -260,6 +270,16 @@ public class MatchService implements DisposableBean {
 
   private Match<?, ?> getMatchOrThrow(UUID matchId) {
     return matches.findById(matchId).orElseThrow(MatchException::notFound);
+  }
+
+  /** Finished matches leave memory, so the result store tells "finished" apart from "unknown". */
+  private Match<?, ?> getLiveMatchOrThrow(UUID matchId) {
+    return matches
+        .findById(matchId)
+        .orElseThrow(() ->
+            resultStore.existsByMatchId(matchId)
+                ? MatchException.matchFinished()
+                : MatchException.notFound());
   }
 
   @Override
