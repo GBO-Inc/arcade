@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { ConnectionStatus } from './ConnectionStatus';
 
 export function AppLayout() {
   const linkStyle = ({ isActive }: { isActive: boolean }) =>
@@ -28,6 +29,7 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            <ConnectionStatus />
             <NavLink to="/profile" className={linkStyle}>
               Profile
             </NavLink>
