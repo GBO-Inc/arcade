@@ -145,3 +145,19 @@ When a move is rejected, **the match state remains unchanged**, no broadcast is 
 | `MATCH_FINISHED` | Match is already `FINISHED` or `ABANDONED`. |
 | `NOT_YOUR_TURN` | Move was submitted by a participant when it is the opponent's turn. |
 | `INVALID_MOVE` | Move payload is missing/malformed or rejected by the `GameEngine`. |
+
+---
+
+## 4. REST: Load a Match
+
+Used by the match page to load a match before it joins the topic, and to tell "unknown match" from "not your match".
+
+- **Request:** `GET /api/matches/{id}` with `Authorization: Bearer <jwt>`. `id` is the match UUID.
+- **Response `200`:** `MatchStateResponse`, the same shape as `match` in section 2.2.
+- **Errors** (`ErrorResponse` body, `message` carries the text):
+
+| Status | Trigger |
+| --- | --- |
+| `401` | Missing or invalid token. |
+| `403` | The authenticated user is not one of the two players. |
+| `404` | No live match with this ID. Finished matches leave memory, so their result is only delivered on the topic. |

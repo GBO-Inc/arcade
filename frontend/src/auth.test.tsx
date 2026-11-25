@@ -12,6 +12,17 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+const IN_PROGRESS_MATCH = {
+  matchId: 'room-42',
+  roomId: 42,
+  gameType: 'TIC_TAC_TOE',
+  status: 'IN_PROGRESS',
+  players: ['7', '8'],
+  currentTurnPlayerId: '7',
+  state: {},
+  moveCount: 0,
+};
+
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -64,6 +75,10 @@ describe('authentication', () => {
         );
       }
 
+      if (String(input).endsWith('/api/matches/room-42')) {
+        return Promise.resolve(jsonResponse(IN_PROGRESS_MATCH));
+      }
+
       return Promise.resolve(
         jsonResponse({ id: 7, email: 'player@example.com' }),
       );
@@ -81,9 +96,9 @@ describe('authentication', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(
-      await screen.findByRole('heading', { name: 'Match room-42' }),
-    ).toBeVisible();
+    expect(await screen.findByTestId('turn-indicator')).toHaveTextContent(
+      'Your turn',
+    );
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe('new-token');
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,

@@ -5,6 +5,17 @@ import App, { AppRoutes } from './App';
 import { ACCESS_TOKEN_KEY } from './api/client';
 import { AuthProvider } from './hooks/AuthContext';
 
+const IN_PROGRESS_MATCH = {
+  matchId: 'room-42',
+  roomId: 42,
+  gameType: 'TIC_TAC_TOE',
+  status: 'IN_PROGRESS',
+  players: ['1', '8'],
+  currentTurnPlayerId: '1',
+  state: {},
+  moveCount: 0,
+};
+
 function renderRoutes(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -20,13 +31,20 @@ describe('App routing', () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ id: 1 }), {
-            headers: { 'Content-Type': 'application/json' },
-          }),
+      vi
+        .fn()
+        .mockImplementation((input: RequestInfo | URL) =>
+          Promise.resolve(
+            new Response(
+              JSON.stringify(
+                String(input).endsWith('/api/matches/room-42')
+                  ? IN_PROGRESS_MATCH
+                  : { id: 1 },
+              ),
+              { headers: { 'Content-Type': 'application/json' } },
+            ),
+          ),
         ),
-      ),
     );
   });
 
@@ -58,9 +76,9 @@ describe('App routing', () => {
     localStorage.setItem(ACCESS_TOKEN_KEY, 'test-token');
     renderRoutes('/match/room-42');
 
-    expect(
-      await screen.findByRole('heading', { name: 'Match room-42' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('turn-indicator')).toHaveTextContent(
+      'Your turn',
+    );
   });
 
   it('loads the UI demo directly', () => {
