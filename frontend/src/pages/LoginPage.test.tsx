@@ -126,7 +126,9 @@ describe('LoginPage', () => {
         ? new Promise<Response>((resolve) => {
             finishLogin = resolve;
           })
-        : Promise.resolve(jsonResponse({ id: 7 })),
+        : Promise.resolve(
+            jsonResponse(String(input).endsWith('/api/rooms') ? [] : { id: 7 }),
+          ),
     );
     vi.stubGlobal('fetch', fetchMock);
     renderAt('/login');
