@@ -97,6 +97,26 @@ Run `docker compose up --build` again after changing a Dockerfile. After `fronte
 
 If `docker compose up` stops with "required variable ... is missing a value", copy the missing lines from `.env.example` to `.env` (for example `JWT_SECRET`).
 
+### Demo accounts
+
+`scripts/dev-reset.sh` (macOS/Linux) and `scripts/dev-reset.ps1` (Windows PowerShell) start a fresh stack with two demo users. **They delete the local database volume**, so use them for local development only.
+
+```sh
+./scripts/dev-reset.sh
+```
+
+On Windows PowerShell, run `.\scripts\dev-reset.ps1` instead.
+
+To play as both users, log in as `alice` in a normal browser window and as `bob` in a private (incognito) window. Both use the password `arcade-dev-password`. A plain `docker compose up` does not seed users; only the reset script sets `ARCADE_SEED_ENABLED=true`.
+
+To play a full tic-tac-toe game through the running stack as both users:
+
+```sh
+node scripts/smoke-game.mjs
+```
+
+The script uses `http://localhost:5173`. If the frontend runs on another port, set `ARCADE_URL`, for example `ARCADE_URL=http://localhost:5174 node scripts/smoke-game.mjs`. It needs Node 22 or newer.
+
 ### Manual frontend
 
 The Vite dev server listens on port 5173 and proxies `/api` and `/ws` to the backend, so the browser only talks to port 5173 and no CORS setup is needed. The proxy target defaults to `http://localhost:8080`; Docker Compose sets `API_PROXY_TARGET=http://backend:8080`. Leave `VITE_API_BASE_URL` unset for local development; it is only needed when the frontend is served without the dev server.
