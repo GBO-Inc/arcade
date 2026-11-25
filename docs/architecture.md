@@ -26,6 +26,9 @@ flowchart LR
 - The lobby exposes room creation, listing and joining through `RoomController`.
 - Successful room creation, joining, and leaving publish a room-list invalidation to
   `/topic/rooms`; clients refetch the open-room list through REST.
+- Players inside a room follow `/topic/rooms/{id}` (ready state, match start, room closed). The match
+  is created only when the full room's players are all ready; `RoomService` locks the room row so
+  simultaneous ready requests start exactly one match, and publishes events after the commit.
 - `MatchService` owns match lifecycle and serialized state transitions. `MatchStateMachine` tracks waiting, in-progress, finished and abandoned states.
 - Game engines implement the shared engine contract and receive state and moves as immutable Java records. Engines validate and apply moves without database, clock or network access.
 - PostgreSQL stores Flyway-managed application data. Match state, disconnect handling and match-result publication are managed by the backend match components.

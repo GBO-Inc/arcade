@@ -291,7 +291,69 @@ event. Clients should refetch `GET /api/rooms` to obtain the authoritative list 
 ```
 
 The event is broadcast after the corresponding room operation succeeds. It contains no room
-snapshot; clients use the REST list endpoint for current room data.
+snapshot; clients use the REST list endpoint for current room data. Closing a room by its
+creator publishes it too.
+
+---
+
+## 3a. Waiting Room
+
+Players in a room wait for each other here. A match is created only when the room is full and
+every player is ready; joining a room no longer creates one.
+
+### REST
+
+All requests need `Authorization: Bearer <jwt>`. Errors use the `ErrorResponse` body.
+
+| Request | Response | Notes |
+| --- | --- | --- |
+| `GET /api/rooms/{id}` | `200` `RoomDetail` | Members only. The waiting room loads this first and again after a reconnect. |
+| `POST /api/rooms/{id}/ready` with `{"ready": true \| false}` | `200` `RoomDetail` | Members only. `ready: true` needs a full room. |
+| `POST /api/rooms/{id}/close` | `204` | Creator only. Empties and closes the room. |
+
+`RoomDetail`:
+
+```json
+{
+  "id": 42,
+  "code": "ABC234",
+  "gameType": "TIC_TAC_TOE",
+  "status": "FULL",
+  "creatorId": 7,
+  "capacity": 2,
+  "matchId": null,
+  "seats": [
+    { "userId": 7, "displayName": "Alice", "avatarColour": "#EF4444", "ready": true },
+    { "userId": 9, "displayName": "Bob", "avatarColour": null, "ready": false }
+  ]
+}
+```
+
+`seats` lists the players in join order; an empty seat is simply absent (`capacity - seats.length`).
+`matchId` is `null` until the room has started (`status` `STARTED`), then holds the match UUID. A
+client that missed `MATCH_STARTED`, for example after a reconnect, finds its match here.
+
+| Status | Trigger |
+| --- | --- |
+| `400` | `ready` is missing. |
+| `403` | `GET`: the user is not in the room. `close`: the user is not the creator. |
+| `404` | The room does not exist or is closed. `ready`: the user is not in the room. |
+| `409` | `ready: true` while the room is not full, or the room has already started. |
+
+`POST /api/rooms/{id}/leave` now also sets every remaining player back to not ready.
+
+### Room events (Server -> Room Members)
+- **Destination:** `/topic/rooms/{id}`. Published only after the change is committed.
+- **Payloads**, told apart by `type`:
+
+| `type` | Extra fields | Trigger |
+| --- | --- | --- |
+| `ROOM_UPDATED` | `room`: `RoomDetail` | Someone joined, left or changed their ready state. |
+| `MATCH_STARTED` | `matchId`: match UUID | The room was full and the last player became ready. Sent once. Players then open `/match/{matchId}`. |
+| `ROOM_CLOSED` | none | The creator closed the room. |
+
+Events can arrive slightly out of order across rapid changes; clients treat `ROOM_UPDATED` as a
+snapshot and may refetch `GET /api/rooms/{id}` to be sure.
 
 ---
 

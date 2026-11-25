@@ -12,7 +12,6 @@ import com.arcade.backend.AbstractIntegrationTest;
 import com.arcade.backend.auth.LoginRequest;
 import com.arcade.backend.auth.RegisterRequest;
 import com.arcade.backend.match.MatchRepository;
-import com.arcade.backend.match.MatchStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -195,25 +194,25 @@ class RoomIT extends AbstractIntegrationTest {
   }
 
   @Test
-  void leavingAFullRoomAbandonsItsWaitingMatchAndTheRefilledRoomGetsANewOne() throws Exception {
+  void joiningDoesNotStartAMatchUntilBothPlayersOfTheRefilledRoomAreReady() throws Exception {
     String alice = signUp("Alice");
     String bob = signUp("Bob");
     String carol = signUp("Carol");
     ResultActions created = createRoom(alice, "TIC_TAC_TOE");
     long roomId = idOf(created);
     joinRoom(bob, codeOf(created)).andExpect(status().isOk());
-    var first = matches.findByRoomId(roomId).orElseThrow();
-
-    leaveRoom(bob, roomId).andExpect(status().isNoContent());
-
-    assertThat(first.getStatus()).isEqualTo(MatchStatus.ABANDONED);
     assertThat(matches.findByRoomId(roomId)).isEmpty();
 
+    setReady(bob, roomId, true).andExpect(status().isOk());
+    leaveRoom(bob, roomId).andExpect(status().isNoContent());
     joinRoom(carol, codeOf(created)).andExpect(status().isOk());
+    setReady(alice, roomId, true).andExpect(status().isOk());
+    assertThat(matches.findByRoomId(roomId)).isEmpty();
+    setReady(carol, roomId, true).andExpect(status().isOk());
 
-    var second = matches.findByRoomId(roomId).orElseThrow();
-    assertThat(second.getId()).isNotEqualTo(first.getId());
-    assertThat(second.getPlayers()).containsExactlyInAnyOrder(userIdOf("Alice"), userIdOf("Carol"));
+    var match = matches.findByRoomId(roomId).orElseThrow();
+    assertThat(match.getPlayers()).containsExactlyInAnyOrder(userIdOf("Alice"), userIdOf("Carol"));
+    assertThat(statusOf(roomId)).isEqualTo("STARTED");
   }
 
   @Test
@@ -306,6 +305,10 @@ class RoomIT extends AbstractIntegrationTest {
   private ResultActions leaveRoom(String token, long roomId) throws Exception {
     return mockMvc.perform(
         post("/api/rooms/" + roomId + "/leave").header(HttpHeaders.AUTHORIZATION, token));
+  }
+
+  private ResultActions setReady(String token, long roomId, boolean ready) throws Exception {
+    return postJson("/api/rooms/" + roomId + "/ready", token, "{\"ready\":" + ready + "}");
   }
 
   private ResultActions postJson(String path, String token, String json) throws Exception {
