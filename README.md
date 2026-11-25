@@ -99,7 +99,7 @@ If `docker compose up` stops with "required variable ... is missing a value", co
 
 ### Manual frontend
 
-The Vite configuration listens on port 5173 and has no proxy. `VITE_API_BASE_URL` controls the REST base URL; when it is unset, requests use relative `/api` paths. Set it when running the frontend manually against the backend on port 8080.
+The Vite configuration listens on port 5173 and has no proxy. `VITE_API_BASE_URL` controls the REST base URL; when it is unset, requests use relative `/api` paths. Set it when running the frontend manually against the backend on port 8080. The WebSocket URL follows the same rule: `ws://localhost:8080/ws` when it is set, otherwise `/ws` on the page origin.
 
 macOS/Linux:
 

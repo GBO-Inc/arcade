@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/auth';
 import { Button } from '../ui';
+import { ConnectionStatus } from './ConnectionStatus';
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -38,6 +39,7 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            <ConnectionStatus />
             <NavLink to="/profile" className={linkStyle}>
               Profile
             </NavLink>

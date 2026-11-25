@@ -37,12 +37,12 @@
 6. Validate and apply the move via the game's `GameEngine`.
 7. Broadcast the updated state + applied move to both players. If the move ends the game, finalize the match and publish the final result.
 
-**Example Payload (`DummyMove` — currently used for `TIC_TAC_TOE`):**
-```json
-{
-  "playerId": "player-1"
-}
-```
+**Move payload per game type:**
+
+| `gameType` | Move | Example |
+| --- | --- | --- |
+| `TIC_TAC_TOE` | `TicTacToeMove`: zero-based `row` and `col` (0-2) | `{"row": 1, "col": 2}` |
+| `CONNECT_FOUR`, `CHECKERS` | `DummyMove` placeholder until their engines exist | `{"playerId": "player-1"}` |
 
 ---
 
@@ -61,17 +61,20 @@
     "players": ["player-1", "player-2"],
     "currentTurnPlayerId": "player-2",
     "state": {
-      "scores": {
-        "player-1": 1,
-        "player-2": 0
-      },
-      "currentPlayer": "player-2",
-      "waitingPlayer": "player-1"
+      "board": [
+        [null, null, null],
+        [null, null, "X"],
+        [null, null, null]
+      ],
+      "xPlayer": "player-1",
+      "oPlayer": "player-2",
+      "currentPlayer": "player-2"
     },
     "moveCount": 1
   },
   "move": {
-    "playerId": "player-1"
+    "row": 1,
+    "col": 2
   },
   "movedBy": "player-1"
 }
