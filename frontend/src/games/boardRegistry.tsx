@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { GAME_LABELS, type GameType, type MatchState } from './matchTypes';
-
+import { TicTacToeBoard } from './TicTacToeBoard';
 export interface BoardProps {
   match: MatchState;
   myPlayerId: string;
@@ -9,7 +9,9 @@ export interface BoardProps {
 }
 
 // SCRUM-47 replaces this with the real registry.
-const boards: Partial<Record<GameType, ComponentType<BoardProps>>> = {};
+const boards: Partial<Record<GameType, ComponentType<BoardProps>>> = {
+  TIC_TAC_TOE: TicTacToeBoard,
+};
 
 /** Renders the board registered for the match's game type, or a placeholder. */
 export function BoardSlot(props: BoardProps) {

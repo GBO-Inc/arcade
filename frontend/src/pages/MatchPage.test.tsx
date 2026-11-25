@@ -19,7 +19,13 @@ const MATCH: MatchState = {
   status: 'IN_PROGRESS',
   players: ['7', '8'],
   currentTurnPlayerId: '7',
-  state: {},
+  state: {
+    board: [
+      [null, null, null],
+      [null, null, null],
+      [null, null, null],
+    ],
+  },
   moveCount: 0,
 };
 
@@ -176,7 +182,7 @@ describe('MatchPage', () => {
 
       expect(FakeStompClient.latest.subscriptions.has(TOPIC)).toBe(true);
       expect(
-        screen.getByText('Board for Tic-tac-toe coming soon'),
+        screen.getByRole('grid', { name: 'Tic-tac-toe board' }),
       ).toBeVisible();
     });
   });
