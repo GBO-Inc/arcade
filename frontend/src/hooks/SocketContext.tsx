@@ -14,6 +14,7 @@ import { Toast } from '../components/ui';
 import {
   SocketConnection,
   buildSocketUrl,
+  type MessageHandler,
   type StompClient,
   type SocketStatus,
 } from '../realtime/SocketConnection';
@@ -70,6 +71,12 @@ export function SocketProvider({
     return () => connection.stop();
   }, [connection, isSignedIn]);
 
+  const subscribe = useCallback(
+    (destination: string, handler: MessageHandler) =>
+      connection.subscribe(destination, handler),
+    [connection],
+  );
+
   const send = useCallback(
     (destination: string, body: unknown) => {
       const sent = connection.send(destination, body);
@@ -88,10 +95,10 @@ export function SocketProvider({
   const value = useMemo(
     () => ({
       status,
-      subscribe: connection.subscribe.bind(connection),
+      subscribe,
       send,
     }),
-    [status, connection, send],
+    [status, subscribe, send],
   );
 
   return (

@@ -145,6 +145,31 @@ describe('SocketProvider', () => {
     expect(document.title).toBe(JSON.stringify({ moveCount: 3 }));
   });
 
+  it('keeps the same subscribe function while the status changes', async () => {
+    const seen: unknown[] = [];
+    function SubscribeSpy() {
+      seen.push(useSocket().subscribe);
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/lobby']}>
+        <AuthProvider>
+          <SocketProvider createClient={FakeStompClient.create}>
+            <ConnectionStatus />
+            <SubscribeSpy />
+          </SocketProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Connecting');
+
+    connectedClient();
+    act(() => FakeStompClient.latest.drop());
+
+    expect(seen.length).toBeGreaterThan(2);
+    expect(new Set(seen).size).toBe(1);
+  });
+
   it('stays offline and does not connect when nobody is signed in', () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
 
